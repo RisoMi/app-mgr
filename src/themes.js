@@ -1,0 +1,354 @@
+// 主题配色系统
+// ---------------------------------------------------------------------------
+// 设计令牌（M3 color roles）按「主题 × 明暗模式」在 JS 里注入到 :root 的 CSS 变量上。
+//
+// 为什么不写好几份 CSS 用 [data-theme] / [data-mode] 属性选择器堆叠：
+// 这两种选择器权重相同，暗色 + 非默认主题时会互相覆盖，必须靠源码顺序 + 双属性
+// 复合选择器去兜，极易出错。用 JS setProperty 直接写变量，无优先级陷阱，
+// 也不会出现切换时的样式闪烁。
+
+// 语义色（危险操作）——与品牌色无关，各主题共用
+const ERROR = {
+  light: {
+    error: '#ba1a1a',
+    'on-error': '#ffffff',
+    'error-container': '#ffdad6',
+    'on-error-container': '#410002'
+  },
+  dark: {
+    error: '#ffb4ab',
+    'on-error': '#690005',
+    'error-container': '#93000a',
+    'on-error-container': '#ffdad6'
+  }
+}
+
+// 阴影与遮罩：中性，不随主题色变化，只随明暗变
+const ELEV = {
+  light: {
+    'elev-1': '0 1px 2px rgba(27, 27, 33, 0.12), 0 1px 3px rgba(27, 27, 33, 0.08)',
+    'elev-2': '0 2px 6px rgba(27, 27, 33, 0.14), 0 1px 2px rgba(27, 27, 33, 0.1)',
+    'elev-3': '0 6px 14px rgba(27, 27, 33, 0.16), 0 2px 6px rgba(27, 27, 33, 0.1)',
+    shadow: '#1b1b21',
+    scrim: 'rgba(27, 27, 33, 0.42)'
+  },
+  dark: {
+    'elev-1': '0 1px 3px rgba(0, 0, 0, 0.5)',
+    'elev-2': '0 2px 6px rgba(0, 0, 0, 0.55)',
+    'elev-3': '0 6px 16px rgba(0, 0, 0, 0.6)',
+    shadow: '#000000',
+    scrim: 'rgba(0, 0, 0, 0.6)'
+  }
+}
+
+// 6 套配色，每套都有 light / dark 两版完整令牌
+export const THEMES = [
+  {
+    id: 'indigo',
+    name: '靛蓝',
+    light: {
+      primary: '#4a5bd4',
+      'on-primary': '#ffffff',
+      'primary-container': '#dee0ff',
+      'on-primary-container': '#06164d',
+      secondary: '#5b5d72',
+      'on-secondary': '#ffffff',
+      'secondary-container': '#dfe1f9',
+      'on-secondary-container': '#181b2c',
+      tertiary: '#775876',
+      surface: '#faf8ff',
+      'on-surface': '#1b1b21',
+      'surface-variant': '#e3e1ec',
+      'on-surface-variant': '#46464f',
+      'surface-container-low': '#f3f0f9',
+      'surface-container': '#edeaf3',
+      'surface-container-high': '#e7e4ee',
+      'surface-container-highest': '#e1dee9',
+      outline: '#777680',
+      'outline-variant': '#c7c5d0'
+    },
+    dark: {
+      primary: '#b9c3ff',
+      'on-primary': '#1f2a78',
+      'primary-container': '#3643a4',
+      'on-primary-container': '#dee0ff',
+      secondary: '#c3c5dd',
+      'on-secondary': '#2c2f42',
+      'secondary-container': '#424659',
+      'on-secondary-container': '#dfe1f9',
+      tertiary: '#e5bad8',
+      surface: '#131318',
+      'on-surface': '#e4e1e9',
+      'surface-variant': '#46464f',
+      'on-surface-variant': '#c7c5d0',
+      'surface-container-low': '#1b1b21',
+      'surface-container': '#1f1f25',
+      'surface-container-high': '#2a2931',
+      'surface-container-highest': '#35343c',
+      outline: '#918f9a',
+      'outline-variant': '#46464f'
+    }
+  },
+  {
+    id: 'emerald',
+    name: '翡翠',
+    light: {
+      primary: '#1e6b52',
+      'on-primary': '#ffffff',
+      'primary-container': '#abf2d5',
+      'on-primary-container': '#002115',
+      secondary: '#4c6358',
+      'on-secondary': '#ffffff',
+      'secondary-container': '#cfe9da',
+      'on-secondary-container': '#092017',
+      tertiary: '#3b6470',
+      surface: '#f6fbf7',
+      'on-surface': '#171d1a',
+      'surface-variant': '#dbe5dd',
+      'on-surface-variant': '#404944',
+      'surface-container-low': '#f0f5f1',
+      'surface-container': '#eaefeb',
+      'surface-container-high': '#e4e9e5',
+      'surface-container-highest': '#dee3df',
+      outline: '#707974',
+      'outline-variant': '#c0c9c3'
+    },
+    dark: {
+      primary: '#8fd6ba',
+      'on-primary': '#00382a',
+      'primary-container': '#00513e',
+      'on-primary-container': '#abf2d5',
+      secondary: '#b3ccbe',
+      'on-secondary': '#1f352c',
+      'secondary-container': '#354b42',
+      'on-secondary-container': '#cfe9da',
+      tertiary: '#a5cddb',
+      surface: '#101412',
+      'on-surface': '#dee4df',
+      'surface-variant': '#404944',
+      'on-surface-variant': '#bfc9c2',
+      'surface-container-low': '#181d1a',
+      'surface-container': '#1c211e',
+      'surface-container-high': '#262b28',
+      'surface-container-highest': '#313633',
+      outline: '#8a938d',
+      'outline-variant': '#404944'
+    }
+  },
+  {
+    id: 'ocean',
+    name: '海蓝',
+    light: {
+      primary: '#00639b',
+      'on-primary': '#ffffff',
+      'primary-container': '#cee5ff',
+      'on-primary-container': '#001d33',
+      secondary: '#51606f',
+      'on-secondary': '#ffffff',
+      'secondary-container': '#d4e4f6',
+      'on-secondary-container': '#0e1d2a',
+      tertiary: '#6a5b8f',
+      surface: '#f7f9ff',
+      'on-surface': '#181c20',
+      'surface-variant': '#dfe2e8',
+      'on-surface-variant': '#43474d',
+      'surface-container-low': '#f1f4fa',
+      'surface-container': '#ebeef4',
+      'surface-container-high': '#e5e8ee',
+      'surface-container-highest': '#dfe3e9',
+      outline: '#73777d',
+      'outline-variant': '#c3c6cc'
+    },
+    dark: {
+      primary: '#96ccff',
+      'on-primary': '#003354',
+      'primary-container': '#004a76',
+      'on-primary-container': '#cee5ff',
+      secondary: '#b8c8da',
+      'on-secondary': '#233240',
+      'secondary-container': '#394857',
+      'on-secondary-container': '#d4e4f6',
+      tertiary: '#d6bce9',
+      surface: '#111418',
+      'on-surface': '#e1e2e6',
+      'surface-variant': '#43474d',
+      'on-surface-variant': '#c3c6cc',
+      'surface-container-low': '#191c20',
+      'surface-container': '#1d2024',
+      'surface-container-high': '#282b2f',
+      'surface-container-highest': '#33363a',
+      outline: '#8d9197',
+      'outline-variant': '#43474d'
+    }
+  },
+  {
+    id: 'amber',
+    name: '琥珀',
+    light: {
+      primary: '#7d5700',
+      'on-primary': '#ffffff',
+      'primary-container': '#ffdea6',
+      'on-primary-container': '#271900',
+      secondary: '#6c5d3f',
+      'on-secondary': '#ffffff',
+      'secondary-container': '#f5e0bb',
+      'on-secondary-container': '#251a04',
+      tertiary: '#4c662b',
+      surface: '#fff8f2',
+      'on-surface': '#1f1b16',
+      'surface-variant': '#ede0cf',
+      'on-surface-variant': '#4e4539',
+      'surface-container-low': '#fbf2e9',
+      'surface-container': '#f5ece3',
+      'surface-container-high': '#efe6dd',
+      'surface-container-highest': '#e9e0d7',
+      outline: '#807568',
+      'outline-variant': '#d2c5b4'
+    },
+    dark: {
+      primary: '#f5be48',
+      'on-primary': '#412d00',
+      'primary-container': '#5e4200',
+      'on-primary-container': '#ffdea6',
+      secondary: '#d9c3a2',
+      'on-secondary': '#3b2f16',
+      'secondary-container': '#53462b',
+      'on-secondary-container': '#f5e0bb',
+      tertiary: '#b1d18a',
+      surface: '#15120c',
+      'on-surface': '#eae1d9',
+      'surface-variant': '#4e4539',
+      'on-surface-variant': '#d2c5b4',
+      'surface-container-low': '#1d1a14',
+      'surface-container': '#211e18',
+      'surface-container-high': '#2c2822',
+      'surface-container-highest': '#37332d',
+      outline: '#9a8f81',
+      'outline-variant': '#4e4539'
+    }
+  },
+  {
+    id: 'rose',
+    name: '玫红',
+    light: {
+      primary: '#984061',
+      'on-primary': '#ffffff',
+      'primary-container': '#ffd9e2',
+      'on-primary-container': '#3e001d',
+      secondary: '#74565f',
+      'on-secondary': '#ffffff',
+      'secondary-container': '#f2dde3',
+      'on-secondary-container': '#2b151c',
+      tertiary: '#7d5260',
+      surface: '#fff8f8',
+      'on-surface': '#201a1b',
+      'surface-variant': '#f0dee2',
+      'on-surface-variant': '#514347',
+      'surface-container-low': '#fdf1f3',
+      'surface-container': '#f7ebed',
+      'surface-container-high': '#f1e5e7',
+      'surface-container-highest': '#ebdfe1',
+      outline: '#837377',
+      'outline-variant': '#d5c2c6'
+    },
+    dark: {
+      primary: '#ffb0c8',
+      'on-primary': '#5e1133',
+      'primary-container': '#7b2949',
+      'on-primary-container': '#ffd9e2',
+      secondary: '#e2bdc6',
+      'on-secondary': '#422931',
+      'secondary-container': '#5a3f47',
+      'on-secondary-container': '#f2dde3',
+      tertiary: '#efb8c8',
+      surface: '#191113',
+      'on-surface': '#ede0e2',
+      'surface-variant': '#514347',
+      'on-surface-variant': '#d5c2c6',
+      'surface-container-low': '#211a1c',
+      'surface-container': '#251e20',
+      'surface-container-high': '#30282a',
+      'surface-container-highest': '#3b3335',
+      outline: '#9e8c90',
+      'outline-variant': '#514347'
+    }
+  },
+  {
+    id: 'violet',
+    name: '紫罗兰',
+    light: {
+      primary: '#6a4fa8',
+      'on-primary': '#ffffff',
+      'primary-container': '#eaddff',
+      'on-primary-container': '#22005d',
+      secondary: '#635b70',
+      'on-secondary': '#ffffff',
+      'secondary-container': '#e9def8',
+      'on-secondary-container': '#1e192b',
+      tertiary: '#7c5266',
+      surface: '#fdf7ff',
+      'on-surface': '#1c1b20',
+      'surface-variant': '#e7e0eb',
+      'on-surface-variant': '#48454e',
+      'surface-container-low': '#f7f1fb',
+      'surface-container': '#f1ebf5',
+      'surface-container-high': '#ebe5ef',
+      'surface-container-highest': '#e5dfe9',
+      outline: '#79757f',
+      'outline-variant': '#cac4cf'
+    },
+    dark: {
+      primary: '#cfbcff',
+      'on-primary': '#381e72',
+      'primary-container': '#4f378b',
+      'on-primary-container': '#eaddff',
+      secondary: '#cdc2db',
+      'on-secondary': '#342d41',
+      'secondary-container': '#4a4358',
+      'on-secondary-container': '#e9def8',
+      tertiary: '#efb8d4',
+      surface: '#141218',
+      'on-surface': '#e6e0e9',
+      'surface-variant': '#48454e',
+      'on-surface-variant': '#cac4cf',
+      'surface-container-low': '#1c1a20',
+      'surface-container': '#201e25',
+      'surface-container-high': '#2b2930',
+      'surface-container-highest': '#36343b',
+      outline: '#938f99',
+      'outline-variant': '#48454e'
+    }
+  }
+]
+
+export const DEFAULT_THEME = 'indigo'
+export const DEFAULT_MODE = 'light'
+
+export function isThemeId(id) {
+  return THEMES.some((t) => t.id === id)
+}
+
+export function getTheme(id) {
+  return THEMES.find((t) => t.id === id) || THEMES[0]
+}
+
+// 取某主题某模式下的完整令牌（供设置面板画色板预览用）
+export function paletteOf(id, mode) {
+  const t = getTheme(id)
+  return { ...t[mode === 'dark' ? 'dark' : 'light'], ...ERROR[mode === 'dark' ? 'dark' : 'light'] }
+}
+
+// 把整套令牌写到 :root 上的 CSS 变量，界面立即生效（无需重载）
+export function applyTheme(themeId, mode) {
+  const theme = getTheme(themeId)
+  const m = mode === 'dark' ? 'dark' : 'light'
+  const vars = { ...theme[m], ...ERROR[m], ...ELEV[m] }
+  const root = document.documentElement
+  for (const key of Object.keys(vars)) {
+    root.style.setProperty('--md-' + key, vars[key])
+  }
+  root.dataset.theme = theme.id
+  root.dataset.mode = m
+  // 让原生控件（滚动条、下拉框、输入框光标）跟随明暗
+  root.style.colorScheme = m
+}

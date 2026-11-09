@@ -1,93 +1,2565 @@
+/* ===========================================================
+   Material Design 3 — 分类启动器 Design Tokens
+   Source color: Indigo #4A5BD4  (动态色可由壁纸取色，此处用静态方案)
+   =========================================================== */
 :root {
-  --surface: #ffffff;
-  --page: #f4f3f8;
-  --text: #1c1b21;
-  --muted: #625f6d;
-  --line: rgba(28, 27, 33, 0.12);
-  --accent: #534ab7;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
-  color-scheme: light dark;
+  /* Color roles (Light) */
+  --md-primary: #4a5bd4;
+  --md-on-primary: #ffffff;
+  --md-primary-container: #dee0ff;
+  --md-on-primary-container: #06164d;
+  --md-secondary: #5b5d72;
+  --md-on-secondary: #ffffff;
+  --md-secondary-container: #dfe1f9;
+  --md-on-secondary-container: #181b2c;
+  --md-tertiary: #775876;
+  --md-surface: #faf8ff;
+  --md-on-surface: #1b1b21;
+  --md-surface-variant: #e3e1ec;
+  --md-on-surface-variant: #46464f;
+  --md-surface-container-low: #f3f0f9;
+  --md-surface-container: #edeaf3;
+  --md-surface-container-high: #e7e4ee;
+  --md-surface-container-highest: #e1dee9;
+  --md-outline: #777680;
+  --md-outline-variant: #c7c5d0;
+  --md-error: #ba1a1a;
+  --md-on-error: #ffffff;
+  --md-error-container: #ffdad6;
+  --md-on-error-container: #410002;
+  --md-shadow: #1b1b21;
+
+  /* Shape */
+  --md-corner-none: 0px;
+  --md-corner-xs: 4px;
+  --md-corner-sm: 8px;
+  --md-corner-md: 12px;
+  --md-corner-lg: 16px;
+  --md-corner-xl: 28px;
+  --md-corner-full: 999px;
+
+  /* Elevation (soft, surface-tinted) */
+  --md-elev-1: 0 1px 2px rgba(27, 27, 33, 0.12), 0 1px 3px rgba(27, 27, 33, 0.08);
+  --md-elev-2: 0 2px 6px rgba(27, 27, 33, 0.14), 0 1px 2px rgba(27, 27, 33, 0.1);
+  --md-elev-3: 0 6px 14px rgba(27, 27, 33, 0.16), 0 2px 6px rgba(27, 27, 33, 0.1);
+
+  /* Motion */
+  --md-ease: cubic-bezier(0.2, 0, 0, 1);
+  --md-ease-emph: cubic-bezier(0.05, 0.7, 0.1, 1);
+
+  --md-font: 'Roboto', -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --surface: #23212b;
-    --page: #17161d;
-    --text: #f2f0f7;
-    --muted: #aaa6ba;
-    --line: rgba(242, 240, 247, 0.14);
-    --accent: #afa9ec;
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--md-font);
+  background: var(--md-surface);
+  color: var(--md-on-surface);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  color: var(--md-on-surface);
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 288px 1fr;
+  height: 100%;
+
+  /* —— 图标尺寸（设置 → 图标显示 → 图标尺寸）：24 / 32 / 48，默认 32 ——
+     图标尺寸一变，卡片宽度与所有派生几何都跟着走，不会出现「图标变了卡片没变」。
+     ⚠️ 这些派生量必须与 --icon-size 定义在**同一个元素**（.app）上：
+     CSS 自定义属性里的 var() 是在「声明它的元素」上解析的，
+     若把 --card-icon 写在 :root（html）上，它只会取 :root 的 --icon-size，
+     拿不到 .app[data-icon-size='48'] 的覆盖值。 */
+  --icon-size: 32px;
+  --card-min: calc(var(--icon-size) + 64px); /* 卡片样式：48 → 112px */
+  /* 行高下限（= 一张普通卡的高度）。同样必须和 --icon-size 在同一元素上解析，理由同上：
+     数值 = 内边距 + 图标 + 卡片内间距 + 名称行盒，只有图标那一项随设置变，
+     所以写成「图标 + 常量」；三种卡片样式的内边距/行距不同，在各自的 data-style 段里覆盖。 */
+  --card-row: calc(var(--icon-size) + 55px);
+  --card-icon: var(--icon-size);
+  --card-icon-radius: calc(var(--icon-size) / 8);
+  --card-folder-icon: calc(var(--icon-size) * 0.58);
+  --card-letter-size: calc(var(--icon-size) * 0.42);
+  --card-plus-size: calc(var(--icon-size) * 0.62);
+}
+.app[data-icon-size='24'] {
+  --icon-size: 24px;
+}
+.app[data-icon-size='32'] {
+  --icon-size: 32px;
+}
+.app[data-icon-size='48'] {
+  --icon-size: 48px;
+}
+
+/* ---------- 无边框窗口：自绘标题栏 + macOS 交通灯 ---------- */
+/* 窗口用 frame:false 建的，系统标题栏没了 —— 下面这条 38px 的条就是它的替代品，
+   同时承担「看起来像窗口」和「拖得动窗口」两个职责。
+   38px 是刻意的：它占的正是被我们去掉的那条系统标题栏的高度，等于没多占地方。 */
+.titlebar {
+  flex: none;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  /* 整条可拖拽移动窗口。注意：拖拽区会吞掉鼠标事件，
+     所以里面任何要点的东西都必须自己声明 no-drag。 */
+  -webkit-app-region: drag;
+}
+.lights {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* 从拖拽区里挖出来，否则三个灯点不动 */
+  -webkit-app-region: no-drag;
+}
+.light {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border-radius: var(--md-corner-full);
+  display: grid;
+  place-items: center;
+  /* 内描边：三块纯色直接糊在浅背景上时边缘会发糊，1px 半透明内圈把轮廓咬住 */
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.14);
+  transition: filter 0.12s var(--md-ease), background 0.18s var(--md-ease);
+}
+.light.close {
+  background: #ff5f57;
+}
+.light.min {
+  background: #febc2e;
+}
+.light.max {
+  background: #28c840;
+}
+.light:hover {
+  filter: brightness(0.9);
+}
+.light:active {
+  filter: brightness(0.8);
+}
+.light:focus-visible {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
+}
+/* 窗口失焦 → 整组变灰，这是 macOS 上区分「当前窗口」最直接的信号。
+   必须排在上面三个色号之后：特异性 (0,3,0) 高于 .light.close 的 (0,2,0)，同层覆盖。 */
+.lights.unfocused .light {
+  background: #d4d2d7;
+}
+/* 图形只在鼠标进入整组灯时浮现 —— 平时是三个安静的原色圆点，这就是 macOS 的做法 */
+.light svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+  transition: opacity 0.12s var(--md-ease);
+}
+.lights:hover .light svg,
+.lights:focus-within .light svg {
+  opacity: 1;
+}
+/* × 和 − 是描边，两个三角是填充，两套画法分开写 */
+.light.close svg,
+.light.min svg {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.55);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+}
+.light.max svg {
+  fill: rgba(0, 0, 0, 0.55);
+  stroke: none;
+}
+
+/* ---------- 导航抽屉（左侧分类） ---------- */
+/* 结构：可滚动列表 + 底部常驻设置区。
+   用「外层 flex 列 + 内部独立滚动」而不是整条 sidebar 滚动，
+   这样设置入口永远钉在底部，不会随分类增多被推到屏幕外。 */
+.sidebar {
+  background: var(--md-surface-container-low);
+  border-right: 1px solid var(--md-outline-variant);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.sidebar-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* 顶部留 4px 即可 —— 38px 的标题栏已经把呼吸空间给出来了，
+     再留 16px 会让「分类启动器」离交通灯太远，标题区散掉。 */
+  padding: 4px 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sidebar-foot {
+  flex: none;
+  padding: 10px 12px 14px;
+  border-top: 1px solid var(--md-outline-variant);
+}
+.side-setting {
+  gap: 10px;
+}
+.side-setting-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.side-setting .meta {
+  font-size: 12px;
+  color: var(--md-on-surface-variant);
+  background: var(--md-surface-container-highest);
+  border-radius: var(--md-corner-full);
+  padding: 2px 10px;
+}
+.brand {
+  /* 上边距收紧：标题栏那条已经占掉 38px，这里再加 8px 会把品牌名推得太低 */
+  padding: 4px 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--md-on-surface);
+}
+/* 品牌 LOGO：直接放 app 图标（蓝底白 M）。
+   图标文件见 src/renderer/src/assets/logo.png（由 resources/icon-512.png 缩放而来）。
+   LOGO 与文字必须 24px 同高、同中线对齐——关键在 .brand-title 的 line-height 必须等于 logo 高度：
+   否则中文字形在 line-height:1 下会贴着行盒顶部、视觉重心上移，看起来「文字偏上、LOGO 偏高」。 */
+.brand .brand-logo {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  border-radius: 6px;
+  display: block;
+  object-fit: contain;
+  align-self: center;
+}
+.brand .brand-title {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  line-height: 24px;   /* = logo 高度：文字行盒与 LOGO 同高同中线 */
+}
+
+/* 搜索行 = 搜索框 + 右侧的新建分类加号。外边距从 .search-row 上移到这一层，
+   这样两个控件共享同一份上下留白，不会各算各的。 */
+.search-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 6px;
+}
+/* 侧栏搜索框（品牌标题下方、分类列表第一行）：在当前分类视图内按名称 / 路径过滤快捷方式 */
+.search-row {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  height: 38px;
+  border-radius: var(--md-corner-full);
+  background: var(--md-surface-container-highest);
+  border: 1px solid var(--md-outline-variant);
+}
+.search-row:focus-within {
+  border-color: var(--md-primary);
+}
+.search-row .search-ico {
+  color: var(--md-on-surface-variant);
+  flex: none;
+}
+.cat-search {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  outline: none;
+  color: var(--md-on-surface);
+  font-size: 14px;
+}
+.cat-search::placeholder {
+  color: var(--md-on-surface-variant);
+}
+.search-clear {
+  flex: none;
+  border: none;
+  background: none;
+  color: var(--md-on-surface-variant);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.search-clear:hover {
+  color: var(--md-on-surface);
+}
+/* 图标：统一内联 SVG，避免 emoji 在不同系统下渲染不一致 */
+svg.md-icon {
+  display: block;
+  pointer-events: none;
+}
+
+.cat {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 16px;
+  border-radius: var(--md-corner-full);
+  font-size: 14px;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  transition: background 0.12s var(--md-ease), color 0.12s var(--md-ease);
+}
+.cat:hover {
+  background: var(--md-surface-container-high);
+}
+.cat.active {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  font-weight: 500;
+}
+.cat .count {
+  font-size: 12px;
+  color: var(--md-on-surface-variant);
+  background: var(--md-surface-container-highest);
+  border-radius: var(--md-corner-full);
+  padding: 2px 10px;
+  min-width: 24px;
+  text-align: center;
+  transition: opacity 0.14s var(--md-ease);
+}
+.cat.active .count {
+  background: var(--md-on-secondary-container);
+  color: var(--md-secondary-container);
+}
+/* 把卡片拖到分类行上时的可放置高亮（松开即归入该分类）。
+   必须排在 .cat.active 之后 —— 两者特异性相同（0-2-0），靠顺序覆盖选中态底色。 */
+.cat.drop-target {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  outline: 2px solid var(--md-primary);
+  outline-offset: -2px;
+}
+/* 计数标签在拖拽期间必须保持可见：拖拽时浏览器不再更新 :hover，残留的 :hover
+   会让 .cat.has-ops:hover .count（0-4-0）把计数淡出，这里用更高特异性顶回来。
+   底色用 on-primary-container / primary-container 这对设计好的配对色，6 套配色都成立。 */
+.cat.drop-target .count,
+.cat.has-ops:hover.drop-target .count,
+.cat.has-ops:focus-within.drop-target .count {
+  background: var(--md-on-primary-container);
+  color: var(--md-primary-container);
+  opacity: 1;
+}
+/* 悬浮操作条：绝对定位 + 淡入缩放，不再用 display:none 造成内容跳动。
+   同时让计数标签淡出，避免与操作条重叠打架。 */
+.cat .ops {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  z-index: 2;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--md-corner-full);
+  background: var(--md-surface-container-highest);
+  border: 1px solid var(--md-outline-variant);
+  box-shadow: var(--md-elev-2);
+  opacity: 0;
+  transform: translateY(-50%) scale(0.9);
+  transform-origin: center right;
+  pointer-events: none;
+  transition: opacity 0.15s var(--md-ease), transform 0.18s var(--md-ease-emph);
+}
+.cat:hover .ops,
+.cat:focus-within .ops {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+  pointer-events: auto;
+}
+.cat.has-ops:hover .count,
+.cat.has-ops:focus-within .count {
+  opacity: 0;
+}
+/* 分类行内重命名输入框 */
+.cat .rename {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  border: 1px solid var(--md-outline);
+  border-radius: var(--md-corner-full);
+  background: var(--md-surface);
+  padding: 0 12px;
+  font-size: 14px;
+  outline: none;
+}
+.cat .rename:focus {
+  border-color: var(--md-primary);
+}
+.icon-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--md-corner-full);
+  display: grid;
+  place-items: center;
+  color: var(--md-on-surface-variant);
+  transition: background 0.14s var(--md-ease), color 0.14s var(--md-ease);
+}
+.icon-btn:hover {
+  background: color-mix(in srgb, var(--md-on-surface) 12%, transparent);
+  color: var(--md-on-surface);
+}
+.icon-btn.danger:hover {
+  background: var(--md-error-container);
+  color: var(--md-error);
+}
+/* 新建分类：搜索框右侧的圆形加号。
+   与搜索框**同高同底色**（38px / container-highest）—— 高度一致，这一行看起来才是一组控件，
+   而不是「一个输入框旁边贴了个按钮」。 */
+.add-cat-btn {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--md-corner-full);
+  border: 1px solid var(--md-outline-variant);
+  background: var(--md-surface-container-highest);
+  color: var(--md-on-surface-variant);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.14s var(--md-ease), color 0.14s var(--md-ease),
+    border-color 0.14s var(--md-ease);
+}
+/* hover 刻意用**中性灰**，不用 .btn.ghost 那套 primary-container：
+   侧栏里 primary-container 正是「当前分类」选中行的底色，加号一 hover 就跟选中的分类撞色，
+   看着像它也处于选中态。这里跟侧栏其余图标按钮（铅笔 / 垃圾桶）用同一种语言：淡淡一层深色。 */
+.add-cat-btn:hover {
+  background: color-mix(in srgb, var(--md-on-surface) 10%, transparent);
+  border-color: var(--md-outline);
+  color: var(--md-on-surface);
+}
+.add-cat-btn:active {
+  transform: scale(0.96);
+}
+
+/* ---------- 主区 + 顶栏 ---------- */
+/* 主区是三行结构：顶栏（常驻）→ 收藏夹抽屉的入口（常驻）→ 图标区（自己滚）。
+   为什么把滚动从 .main 挪到 .content：那枚小三角必须**永远贴在图标区顶边**才点得到，
+   它一旦跟着卡片一起滚上去，滚下去就找不到入口了。顶栏同理 ——
+   所以外层不再滚动（.top-app-bar 的 sticky 也就失去意义，改成常驻）。 */
+.main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* flex 子项默认 min-height:auto，不在外层置 0 的话内层 .content 撑不进去、滚动条不出现 */
+  min-height: 0;
+  overflow: hidden;
+}
+.top-app-bar {
+  flex: none;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 28px 16px;
+  background: color-mix(in srgb, var(--md-surface) 88%, transparent);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--md-outline-variant);
+  /* 无边框窗口：顶栏和左侧那条 38px 标题栏连成一条完整的顶部拖拽带，
+     整扇窗顶部任意位置都能拖动窗口（系统标题栏没了，这条得给用户）。
+     ⚠️ 顶栏里现在有可点的东西了（标题旁那个操作指南问号），所以带内的按钮
+     必须自己声明 no-drag —— 漏掉的那个会「看着能点、点下去毫无反应」，
+     而且不报任何错，只能靠人肉发现。 */
+  -webkit-app-region: drag;
+}
+/* 标题行：分类名 + 操作指南入口。问号与标题同轴居中，不影响标题自己的排版 */
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+/* 问号按钮（操作指南入口）。⚠️ .mini-entry 刻意不并到这里：按 class 找「问号
+   按钮」的地方（含测试台断言）不能命中它。 */
+.help-btn {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--md-corner-full);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  /* 承上：拖拽带内的可点元素必须自己 no-drag */
+  -webkit-app-region: no-drag;
+  transition:
+    background 0.15s var(--md-ease),
+    color 0.15s var(--md-ease);
+}
+.help-btn:hover {
+  background: var(--md-surface-container-highest);
+  color: var(--md-on-surface);
+}
+/* 顶栏右侧胶囊钮组（Lei 2026-10-27：mini 入口移到右侧 + 新增完整态置顶 + 去掉 mini 文字）。
+   容器与钮的外观照 mini 面板标题栏的 .mini-actions/.mini-btn —— 入口控件与目标面板
+   用同一件「容器」语言。装两枚：图钉 = 完整态置顶（on 时主题色点亮），四角 = 进 mini。
+   ⚠️ 都在拖拽带上，钮自己声明 no-drag，否则点击会被拖窗口吞掉。 */
+.top-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--md-corner-full);
+  background: color-mix(in srgb, var(--md-on-surface) 7%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--md-on-surface) 9%, transparent);
+}
+.top-btn {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--md-corner-full);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  /* 承上：拖拽带内的可点元素必须自己 no-drag */
+  -webkit-app-region: no-drag;
+  transition:
+    background 0.15s var(--md-ease),
+    color 0.15s var(--md-ease);
+}
+.top-btn:hover {
+  background: color-mix(in srgb, var(--md-on-surface) 10%, transparent);
+  color: var(--md-on-surface);
+}
+.top-btn:active {
+  background: color-mix(in srgb, var(--md-on-surface) 16%, transparent);
+}
+/* 置顶开启：主题色点亮，状态一眼可辨（同 mini 面板图钉） */
+.top-btn.on {
+  color: var(--md-primary);
+  background: color-mix(in srgb, var(--md-primary) 12%, transparent);
+}
+.top-app-bar h1 {
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 0;
+  margin: 0;
+  color: var(--md-on-surface);
+}
+.top-app-bar .sub {
+  font-size: 13px;
+  color: var(--md-on-surface-variant);
+  margin-top: 2px;
+}
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* 滚动条槽位恒定：卡片列宽不随「有没有滚动条」变化。
+     收藏夹抽屉里的网格要跟这里逐列对齐，靠的就是两边槽位一样宽。 */
+  scrollbar-gutter: stable;
+  /* 底部 96px 留白：给编辑模式的悬浮操作条腾地方，也让「点空白处退出」有处可点 */
+  padding: 24px 28px 96px;
+}
+
+/* ---------- 收藏夹抽屉（图标区顶边） ----------
+   收起态界面上只有一枚**吸附在顶边的小倒三角**（.fav-tab）；点它把抽屉拉出来。
+   ⚠️ 抽屉展开时**在文档流里把图标区顺势往下推**，而不是盖在卡片上：
+   .fav-drawer 不设死高度、.fav-panel 也不绝对定位 —— 面板长多高，
+   .content 的顶边就跟着降多低，卡片顺势下移，永远不会被抽屉遮住
+   （面板展开的 max-height 过渡本身就是这段「顶下去」的动画，不用另做）。
+   收起时面板 max-height:0，对图标区零占位，那枚三角悬浮在图标区的顶部留白里。 */
+.fav-drawer {
+  /* 抽屉最多拉这么高：给图标区留足可视空间，别把整屏占满。
+     面板与内部的滚动区共用同一个上限，免得一个先封顶把另一个截断。 */
+  --fav-max: min(52vh, 420px);
+  position: relative;
+  flex: none;
+  z-index: 20; /* 高于图标区（z-index:auto）：三角与面板顶边压在图标区之上 */
+  transition: opacity 0.2s var(--md-ease);
+}
+
+/* 入口：小倒三角。静止时只有三角本身（背景透明，不给按钮画任何壳），
+   悬停 / 键盘聚焦才浮出一层浅底 —— 点得到、看得见，但不占视觉。 */
+.fav-tab {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2; /* 抽屉拉开时压在上面，仍点得到（点它收起） */
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 15px;
+  border-radius: 0 0 10px 10px;
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  transition: background 0.15s var(--md-ease), color 0.15s var(--md-ease);
+}
+.fav-tab:hover,
+.fav-tab:focus-visible {
+  background: var(--md-surface-container-high);
+  color: var(--md-on-surface);
+}
+/* 倒三角用 border 画（三条边即可，与字号无关）。展开后转 180° 朝上：
+   语义从「拉开」变成「收起」。 */
+.fav-tri {
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 7px solid currentColor;
+  transition: transform 0.24s var(--md-ease-emph);
+}
+.fav-drawer.open .fav-tri {
+  transform: rotate(180deg);
+}
+
+/* 抽屉面板：max-height 0 → 上限，配 opacity 一起拉出来。
+   它**在文档流里**（不绝对定位）—— 这就是「展开时图标区顺势下移」的实现。
+   内容再高也由 .fav-body 自己滚，不至于把整屏占满。 */
+.fav-panel {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none; /* 收起（不可见）时不能挡住底下的卡片 */
+  background: var(--md-surface-container-low);
+  border-radius: 0 0 var(--md-corner-lg) var(--md-corner-lg);
+  transition: max-height 0.3s var(--md-ease-emph), opacity 0.18s var(--md-ease),
+    box-shadow 0.3s var(--md-ease);
+}
+.fav-drawer.open .fav-panel {
+  max-height: var(--fav-max);
+  opacity: 1;
+  pointer-events: auto;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--md-shadow) 20%, transparent);
+}
+/* ⚠️ 水平内边距必须与 .content 的（28px）一致，滚动条槽位也要一致
+   （scrollbar-gutter: stable）：抽屉里的 .grid 才能和图标区的网格**逐列对齐**，
+   看起来是同一个网格而不是另做了一套。 */
+.fav-body {
+  padding: 22px 28px 28px;
+  max-height: var(--fav-max);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+/* 抽屉里的卡片全都是收藏项，星标在这里零信息量 —— 不显示 */
+.fav-panel .card .fav-mark {
+  display: none;
+}
+/* 空收藏：只留一句最短的话。
+   抽屉现在是把图标区顺势推下去、不再盖住卡片，所以不必再刻意垫到「一行卡片」的高度。 */
+.fav-empty {
+  margin: 0;
+  padding: 4px 0 6px;
+  font-size: 13px;
+  color: var(--md-on-surface-variant);
+}
+
+/* 拖入文件时抽屉让开（只淡出、不收起空间）：它是落点提示的干扰源，
+   但拖动期间布局最好保持不动 —— 连高度一起收掉会让整片图标在拖动中跳一下。 */
+.app.drag-active .fav-drawer {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- 分组（收纳） ----------
+   组卡 = **一张和普通图标一样大的卡**：脸是一个彩色文件夹图标，右上角一枚数字角标
+   （组里一共几项）。2026-09-23 Lei 的决定 ——「将宫格改成 1 个单个图标大小的固定图标，
+   代表分组，右上角显示数字，分组下有多少图标」。
+   为什么这样比「2×2 宫格封面」好：宫格为了「一眼看出这是一堆东西」付了两笔账 ——
+   占 4 格（一行少放两个项目），以及为「按数量排几列几行 / 格子多大 / 悬停放大到哪儿」
+   维护一整套几何。这两笔一个数字就付清了：右上角的「N」比九个迷你图标更直接地回答
+   「这里有多少东西」，而彩色文件夹一眼说明「这是个分组，不是一个应用」。
+   组卡因此不再声明任何跨格（span 2 已删）—— 它就是一张普通卡，
+   网格里从此没有跨格元素，行轨道恒等于「一张卡的高度」，不会被谁顶高。 */
+.card.group-card {
+  /* 只留一条：文件夹方块的颜色由 JS 传进来的 --group-color 决定（见 GroupCard.vue）。
+     兜底给 primary，是为了手工改过 app.json 的极端情况不至于画成一块透明方。 */
+  --group-color: var(--md-primary);
+}
+/* 文件夹方块：尺寸 / 圆角 / 图形大小全部复用 .card .fallback（与兜底字母头像同一套语言），
+   这里只换配色 —— 彩色底 + 纯白图形（色块承载「身份」，图形说明「是什么」）。
+   图形**恒为纯白**：Lei 2026-09-25「去除文件夹图形调色滑条和文件夹调色滑条，保留 7 个调色选项」
+   —— 上一轮给图形上色的那条链（group.ink / INK_DEFAULT / inkOf / --group-ink）整条删了，
+   所以这里直接写死 #fff、**不留变量**：没有变量就没有「变量传了却没生效」那一类坑。
+   ⚠️ 选择器要压得住 `.card .fallback.folder`（无底板款，给「文件夹类型的项目」用）：
+   那条是 0,3,0，这条是 0,4,0 —— 压不住就会出现「分组与文件夹项目长得一模一样」。 */
+.card.group-card .fallback.folder {
+  background: var(--group-color);
+  color: #fff;
+}
+/* 承载文件夹 + 角标的那一层：**和普通图标等大**（--card-icon，跟着设置里的图标尺寸走）。
+   角标要贴着图标的右上角，所以得有一个与图标同尺寸的定位参照 ——
+   直接锚在卡片上会飘到卡片角上去（卡片四周还有一圈内边距）。 */
+.group-face {
+  position: relative;
+  flex: none;
+  width: var(--card-icon);
+  height: var(--card-icon);
+  display: grid;
+  place-items: center;
+}
+/* 数字角标：这个组里一共几项。
+   为什么固定挂在右上角、且**永远显示**：它是这张卡唯一的「这里有一堆东西」的证据 ——
+   以前靠宫格画 9 个迷你图标表达，现在靠一个数字，藏起来就又变回「一个普通图标」了。
+   尺寸跟着图标尺寸走（0.55 × 图标），三档图标设置下与图标始终成比例。
+   ⚠️ 配色刻意**不用主题变量**：这枚角标要同时压得住两样东西 —— ① 彩虹 7 色里任意
+   一个文件夹底色（浅色主题的 secondary-container 压上去像被角标啃了一口，实测过）；
+   ② 三种卡片样式各自的卡片底色（卡片档是近白的 container-low，另两档是透明的）。
+   白底 + 深字 + 一圈投影是在「任意底色 × 任意主题」下都成立的一组（iOS 角标同理），
+   代价只是它不跟随主题变色 —— 值。 */
+.card.group-card .group-count {
+  position: absolute;
+  top: calc(var(--card-icon) / -8);
+  right: calc(var(--card-icon) / -8);
+  min-width: calc(var(--card-icon) * 0.55);
+  height: calc(var(--card-icon) * 0.55);
+  padding: 0 calc(var(--card-icon) / 12);
+  border-radius: var(--md-corner-full);
+  background: #fff;
+  color: #1b1b20;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.32);
+  font-size: calc(var(--card-icon) * 0.36);
+  font-weight: 600;
+  line-height: calc(var(--card-icon) * 0.55);
+  text-align: center;
+  font-variant-numeric: tabular-nums; /* 同一列两个组卡的数字宽度一致 */
+  /* 纯标记：不抢卡片的点击 / 拖拽 */
+  pointer-events: none;
+}
+/* 这块地方前后住过两条染色规则，都已被 Lei 删掉（别再往回加）：
+   ① 「卡片底色」：.app[data-style] .card.group-card.tinted 靠 background-image 叠一层淡彩。
+      2026-09-24「不需要支持调整卡片底色」→ 连同 group.bgHue / setGroupBgHue / --group-bg-hue
+      一起删。它当年被迫顶到 0,5,0 才压得住原生 / 仅图标档的 `background` 简写
+      （踩坑记录见 user-level skill 坑 47），代码里不再留尸体。
+   ② 「文件夹图形墨色」：--group-ink 给方块里那个文件夹上色。
+      2026-09-25「两条滑条都删掉，保留 7 个调色选项」→ 图形回到写死的纯白（见上一条规则）。
+   于是组卡只剩**一个**可调颜色：方块色（--group-color）。 */
+/* 悬停反馈：放大**脸**（文件夹那一块），不动卡片、更不含底部名称。
+   与「仅图标」档同一个模型 —— 那一档放大的本来就是 .logo / .fallback 这块内容
+   （它的图标铺满整卡、名字也收起，看着才像「整卡在长大」）。
+   ⚠️ 选择器必须落到 .fallback 上，别写回 .card.group-card:hover：
+   那会把名称一起放大，Lei 明确否过（「不需要包裹底部的分组名称」）。 */
+.app[data-style='card'] .card.group-card .fallback,
+.app[data-style='native'] .card.group-card .fallback {
+  transition: transform 0.16s var(--md-ease-emph);
+}
+.app[data-style='card'] .card.group-card:hover .fallback,
+.app[data-style='native'] .card.group-card:hover .fallback {
+  transform: scale(1.06);
+}
+/* 有东西拖到这张卡上**停住**了：卡面「张开口」，此刻松手就是收成一个分组。
+   必须和「插到它前面」的竖线反馈明显不同，否则用户分不清停住和路过的区别。 */
+.card.snap-target {
+  outline: 2px dashed var(--md-primary);
+  outline-offset: -2px;
+  background: var(--md-secondary-container);
+  box-shadow: var(--md-elev-2);
+  transform: translateY(calc(-1 * var(--card-lift) - 2px)) scale(1.04);
+}
+.card.snap-target .logo,
+.card.snap-target .fallback {
+  transform: scale(0.84);
+}
+/* 项目正被拖到组卡上（要被吸进去）：给一个「收纳口张开」的反馈。
+   底 + 虚线框留在**卡片**上 —— 拖到卡片任何位置（含底部名字那一行）都算落进来，
+   「整张卡都是落点」这件事该由卡片来表达（它表达的是落点范围，不是放大）；
+   「张开」的手势则与悬停同源：只放大文件夹那一块（放大整卡会把名字一起放大）。
+   ⚠️ 特异性 0,6,0，高于悬停那条 0,4,0：拖拽中「悬停」同时成立，靠特异性决胜，
+   不必依赖书写顺序。幅度只能比悬停大一点点，否则落点反馈与悬停分不出来。 */
+.card.group-card.drop-into {
+  outline: 2px dashed var(--md-primary);
+  outline-offset: -2px;
+  background: var(--md-secondary-container);
+}
+.card.group-card.drop-into .fallback.folder {
+  transform: scale(1.12);
+}
+/* 改名：名称就地变输入框（双击名称或右键「重命名分组…」） */
+.group-name-input {
+  width: 100%;
+  min-width: 0;
+  padding: 1px 4px;
+  border: 1px solid var(--md-primary);
+  border-radius: var(--md-corner-sm);
+  background: var(--md-surface);
+  color: var(--md-on-surface);
+  font-size: var(--card-name-size);
+  font-weight: 500;
+  text-align: center;
+  outline: none;
+}
+
+/* 分组弹窗：点组卡浮起来的一扇小窗（遮罩 + 居中面板），里面就是组内成员。
+   与「项目编辑 / 设置」两个对话框共用 .mask + .dialog 那套语言；不再往图标区里塞面板 ——
+   图标区的版式因此完全不受「打开某个组」影响（组卡不被顶掉、后面的卡片不被推走）。 */
+.dialog.group-modal {
+  width: min(780px, 88vw);
+  max-height: 76vh;
+  padding: 18px 20px 14px;
+  display: flex;
+  flex-direction: column;
+  /* 面板自己不滚，滚的是里面的网格区（见 .gm-body）：头尾常驻，
+     标题与「拖到窗口外会怎样」的提示永远看得见 */
+  overflow: hidden;
+}
+.gm-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--md-on-surface-variant);
+}
+.gm-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--md-on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gm-count {
+  flex: none;
+  font-size: 12px;
+}
+.gm-close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: var(--md-corner-full);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  transition: background 0.15s var(--md-ease), color 0.15s var(--md-ease);
+}
+.gm-close:hover {
+  background: var(--md-surface-container-highest);
+  color: var(--md-on-surface);
+}
+.gm-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 2px;
+}
+.gm-foot {
+  flex: none;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--md-on-surface-variant);
+  text-align: center;
+}
+/* 「拖到窗口外 = 移出分组」进行中：给窗口一圈虚线 + 提示语变色，
+   让「松手会发生什么」在松手之前就说清楚（拖拽反馈的第一原则）。 */
+.group-modal.drag-out {
+  outline: 2px dashed var(--md-primary);
+  outline-offset: 6px;
+}
+.group-modal.drag-out .gm-foot {
+  color: var(--md-primary);
+  font-weight: 500;
+}
+
+/* ---------- M3 按钮 ---------- */
+.btn {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  height: 40px;
+  padding: 0 24px;
+  border-radius: var(--md-corner-full);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: box-shadow 0.15s var(--md-ease), filter 0.15s var(--md-ease),
+    transform 0.1s var(--md-ease);
+}
+.btn:hover {
+  box-shadow: var(--md-elev-1);
+  filter: brightness(1.04);
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn.ghost {
+  background: transparent;
+  color: var(--md-primary);
+  border: 1px solid var(--md-outline);
+  box-shadow: none;
+}
+.btn.ghost:hover {
+  background: var(--md-primary-container);
+  border-color: var(--md-primary-container);
+  filter: none;
+}
+
+/* 扩展 FAB 已移除：新增项目改由网格内「+ 添加」卡片 + 资源管理器拖入完成 */
+
+/* ---------- 项目网格（M3 卡片） ---------- */
+/* 尺寸基准：图标大小由设置里的「图标尺寸」决定（24 / 32 / 48，默认 32），
+   卡片与其余几何一律从它算出来（见下面 .app 段），不再各自写死。
+   参照：1120px 默认窗口下主区内容宽约 776px ⇒ 32px 图标时约 8 列。 */
+:root {
+  --card-gap: 12px;
+  --card-radius: var(--md-corner-md);
+  --card-pad: 16px 10px 12px;
+  --card-gap-inner: 10px;
+  --card-name-size: 13px;
+  --card-lift: 2px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
+  /* 行高下限 = 一张普通卡的高度（--card-row，跟着图标尺寸与卡片样式走，见 .app 段）。
+     它管的是「卡片名字折成两行」这类内容比下限高的情况 —— 有下限在，网格就不会
+     被某一行顶上来的高度带歪。以前组卡占 2×2、封面要正方，会把它跨的那两行顶高，
+     于是这里还给普通卡钉过 `align-self: start` 防拉伸；
+     2026-09-23 组卡缩回 1 格（宫格改为「一个图标 + 数字角标」）之后，
+     网格里**没有任何跨格元素**了，这条限制连同它的理由一起去掉，
+     普通卡恢复默认的 `stretch`（同一行里的卡片高度始终一致）。 */
+  grid-auto-rows: minmax(var(--card-row, 0px), auto);
+  gap: var(--card-gap);
+}
+.card {
+  background: var(--md-surface-container-low);
+  border-radius: var(--card-radius);
+  padding: var(--card-pad);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--card-gap-inner);
+  box-shadow: var(--md-elev-1);
+  transition: box-shadow 0.2s var(--md-ease), transform 0.14s var(--md-ease),
+    outline-color 0.15s var(--md-ease);
+  position: relative;
+  cursor: pointer;
+  /* 用 outline（不占位）做选中描边，避免像 border 那样引起卡片尺寸跳动 */
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  /* 长按进入编辑模式：禁用文本选中与原生图片拖拽，否则会与长按/拖动打架 */
+  user-select: none;
+  -webkit-user-select: none;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--md-on-surface);
+  opacity: 0;
+  transition: opacity 0.15s var(--md-ease);
+  pointer-events: none;
+}
+.card:hover {
+  box-shadow: var(--md-elev-2);
+  transform: translateY(calc(-1 * var(--card-lift)));
+}
+.card:hover::before {
+  opacity: 0.04;
+}
+.card:active {
+  transform: translateY(-1px) scale(0.99);
+}
+
+/* —— 拖动 ——
+   卡片始终可拖（不再需要先长按进入某个模式）：拖动源半透明，落点由指示线表达。 */
+/* 拖动源自身：半透明，落点由下面的指示线表达 */
+.card.drag-src {
+  opacity: 0.4;
+}
+/* 整组拖动时（编辑模式下拖已选中的卡）：稍微抬一点不透明度 ——
+   0.4 会把选中底色一起洗掉，整批看起来像「被禁用」而不是「正在被搬走」 */
+.card.drag-src.selected {
+  opacity: 0.55;
+}
+.card.drop-before::after,
+.card.drop-after::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--md-primary);
+}
+.card.drop-before::after {
+  left: -7px;
+}
+.card.drop-after::after {
+  right: -7px;
+}
+/* Windows 图标自带透明通道，直接呈现图标本身即可（加底色反而像贴了块色板） */
+.card .logo {
+  width: var(--card-icon);
+  height: var(--card-icon);
+  border-radius: var(--card-icon-radius);
+  object-fit: contain;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+.card .fallback {
+  width: var(--card-icon);
+  height: var(--card-icon);
+  border-radius: var(--card-icon-radius);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: var(--card-letter-size);
+  font-weight: 500;
+}
+/* —— 双击「图标回应」动效（方案 E）——
+   双击卡片启动程序时，让**图标本体**活起来：一次带过冲的弹跳放大 + 轻微歪头（像被点醒），
+   同时图标中心荡开一圈很淡的主题色光环。卡片外壳不动、不抢戏，注意力全在图标上。
+   动画只动 transform/opacity（GPU 合成、不引发重排），不动卡片几何，
+   与现有 hover/active 各作用在不同元素上（它们是 .card 的 transform，这里是 .icon-box 内部），
+   互不打架。颜色走 --md-primary，浅/深色自动适配；prefers-reduced-motion 下降级为单次闪动。 */
+.icon-box {
+  position: relative;
+  display: inline-flex;
+  width: var(--card-icon);
+  height: var(--card-icon);
+  overflow: visible;
+}
+/* 光环：默认不可见；.launch-fx 期间由 keyframes 接管显隐与扩散。用伪元素，
+   不挤占任何布局、不影响图标尺寸。 */
+.icon-box::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--card-icon);
+  height: var(--card-icon);
+  border: 2px solid var(--md-primary);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0.85);
+  opacity: 0;
+  pointer-events: none;
+}
+.card.launch-fx .icon-box::after {
+  animation: icon-ring 0.6s ease-out forwards;
+}
+.card.launch-fx .icon-box > .logo,
+.card.launch-fx .icon-box > .fallback {
+  transform-origin: center center;
+  animation: icon-pop 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes icon-pop {
+  0%   { transform: scale(1) rotate(0deg); }
+  35%  { transform: scale(1.22) rotate(-4deg); }
+  60%  { transform: scale(0.96) rotate(2deg); }
+  80%  { transform: scale(1.05) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+@keyframes icon-ring {
+  0%   { opacity: 0.5;  transform: translate(-50%, -50%) scale(0.85); }
+  100% { opacity: 0;    transform: translate(-50%, -50%) scale(2.4); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card.launch-fx .icon-box::after {
+    animation: icon-ring 0.32s ease-out forwards;
+  }
+  .card.launch-fx .icon-box > .logo,
+  .card.launch-fx .icon-box > .fallback {
+    animation: icon-flash 0.3s ease-out forwards;
+  }
+}
+@keyframes icon-flash {
+  0%   { opacity: 0.35; }
+  100% { opacity: 1; }
+}
+/* 文件夹类型的项目：**没有底板**，只有中间一个文件夹图形。
+   改前这里是「灰底板 + 灰图形」，而分组卡的 face 走的也是同一个 .fallback.folder 结构
+   （彩底板 + 白图形 + 数字角标）—— 于是"文件夹"和"分组"在屏幕上就是**同一张卡换个颜色**。
+   Lei 2026-09-25 的原话：「当前拖入的文件夹是灰色的，且样式和图标分组一样，会导致没有区分度」。
+   定稿（同日 Lei 选定）：底板整条去掉 —— 区分交给**有色块 / 无色块**，不再靠颜色去分。
+   图形颜色随后也改了口径：同日 Lei 又要求「文件夹的颜色也添加和分组一样支持右键调节」，
+   并指定「默认黄色，Windows系统也是」→ 图形色由 JS 按项传进来（ItemCard.vue 绑 inline style，
+   取 store.folderColorOf：有 item.color 用它、没有就回落到默认黄），右键文件夹卡可换。
+   文件夹不抽图标（目录没有可抽的图标资源，也不值得为它多起一次 PowerShell 进程），
+   所以它永远就是这一个通用轮廓、看不出具体是哪个文件夹 —— 这是明确接受过的取舍，
+   别再"顺手"给它加回底板或改成抽图标。
+   ⚠️ 下面这条 color 只是**技术兜底**：正常路径上 ItemCard 的 inline style 一定覆盖它。
+      留着是因为万一那条绑定没生效，图形会落到 .card .fallback 的 `color:#fff` ——
+      白图形压在近白的卡片底上等于"图标没出来"，比一个偏灰的兜底难查得多。 */
+.card .fallback.folder {
+  background: transparent;
+  color: var(--md-on-surface-variant);
+}
+/* MdIcon 的 width/height 是标签属性，CSS 可以覆盖（属性优先级低于样式） */
+.card .fallback svg.md-icon {
+  width: var(--card-folder-icon);
+  height: var(--card-folder-icon);
+}
+/* 底板去掉之后，图形自己就是那个图标 —— 再沿用兜底字母头像的 0.58，会让它比邻居
+   （32px 的色块）轻一大截，看着像"没加载出来"。这一条让它撑满图标格。
+   ⚠️ 必须排除组卡：组卡那个白图形是调过多轮的 0.58，被这条一起改大就走样了。 */
+.card:not(.group-card) .fallback.folder svg.md-icon {
+  width: var(--card-icon);
+  height: var(--card-icon);
+}
+.card .name {
+  font-size: var(--card-name-size);
+  font-weight: 500;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card .hint {
+  font-size: 11px;
+  color: var(--md-on-surface-variant);
+}
+/* 卡片高度留给图标与名称，「程序/文件夹」与完整名称由 title 提示承载；
+   「添加」卡片的「添加」字样是主要语义，保留 */
+.card:not(.add-card) .hint {
+  display: none;
+}
+/* 右键菜单正挂在这张卡片上：给它明确的容器色 + primary 描边，一眼看出菜单作用于谁。
+   （拖动自身的反馈是 .drag-src 的半透明，两者互不干扰） */
+.card.ctx-target {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  outline-color: var(--md-primary);
+}
+
+/* ---------- 右键菜单（卡片上下文菜单） ----------
+   用自定义菜单而不是 Electron 原生菜单：原生菜单永远是系统样式、跟不了 M3 主题，
+   也没法在自动化里断言；自定义菜单加一项只改一个数组。 */
+.ctx-menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 198px;
+  padding: 6px;
+  background: var(--md-surface-container-high);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-corner-md);
+  box-shadow: var(--md-elev-3);
+  /* 定位要在渲染后量到尺寸才能翻转，所以先藏起来，等组件标好 ready 再出现
+     —— 否则会看到菜单先在鼠标位置闪一下、再跳到别处 */
+  visibility: hidden;
+}
+.ctx-menu.ready {
+  visibility: visible;
+  animation: md-fade 0.12s var(--md-ease);
+}
+/* ---------- 分组调色块（右键组卡菜单最上面那块） ----------
+   里面只有**一排 7 个色点**，换的是组卡那个文件夹方块的底色（见 ItemContextMenu.vue）。
+   沿革（三轮，别照着上一版往回加 —— 每次都是「控件太多」被砍回来的）：
+     ① 7 个色点；
+     ② + 两条色相滑条（方块一档、方块里那个文件夹图形一档）+ 一套两列网格（左列目标名）；
+     ③ Lei 2026-09-25「去除文件夹图形调色滑条和文件夹调色滑条，保留 7 个调色选项」
+        → 两条滑条全删、图形固定纯白，两列网格与标签列一并撤掉，于是又回到「一排色点」。
+   ⚠️ 这一整块**不是** `.ctx-item`：`.ctx-item` 是「一条操作」的语言，这里是选择器；
+      验收台里钉「分组菜单就那两条（.ctx-item）」的断言因此不用改口径。 */
+.ctx-color-block {
+  padding: 4px 8px 6px;
+}
+.ctx-color-head {
+  padding: 0 2px 7px;
+  color: var(--md-on-surface-variant);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.ctx-colors {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ctx-color {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: var(--md-corner-full);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  /* 一圈浅描边：浅色（琥珀 / 青）在没有描边时与菜单底几乎融在一起 */
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  transition: transform 0.12s var(--md-ease);
+}
+.ctx-color:hover {
+  transform: scale(1.18);
+}
+.ctx-color.on {
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.12),
+    0 0 0 2px var(--md-surface),
+    0 0 0 3.5px var(--md-primary);
+}
+/* 色相滑条（.ctx-hue / .ctx-hue-row / .ctx-hue-reset / .ctx-hue.off）连同
+   .ctx-menu.has-colors 那条加宽规则一起删了：面板只剩一排色点，铺开 148px
+   （7 × 16 + 6 × 6）加上两侧内边距，菜单自己的 198px 就够，不用再特判。 */
+
+.ctx-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--md-corner-sm);
+  background: transparent;
+  color: var(--md-on-surface);
+  font-size: 13px;
+  text-align: left;
+}
+.ctx-item svg.md-icon {
+  flex: none;
+  color: var(--md-on-surface-variant);
+}
+.ctx-item:hover {
+  background: var(--md-surface-container-highest);
+}
+.ctx-item.danger,
+.ctx-item.danger svg.md-icon {
+  color: var(--md-error);
+}
+.ctx-sep {
+  height: 1px;
+  margin: 5px 6px;
+  background: var(--md-outline-variant);
+}
+.add-card {
+  border: 1.5px dashed var(--md-outline-variant);
+  box-shadow: none;
+  justify-content: center;
+  color: var(--md-on-surface-variant);
+}
+.add-card:hover {
+  color: var(--md-primary);
+  border-color: var(--md-primary);
+  box-shadow: none;
+}
+.add-card .plus {
+  font-size: var(--card-plus-size);
+  line-height: 1;
+}
+.add-card .hint {
+  color: inherit;
+}
+.empty {
+  color: var(--md-on-surface-variant);
+  font-size: 14px;
+  margin-top: 48px;
+  text-align: center;
+}
+
+/* ---------- 对话框（M3） ---------- */
+.mask {
+  position: fixed;
+  inset: 0;
+  background: var(--md-scrim);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  animation: md-fade 0.18s var(--md-ease);
+}
+.dialog {
+  width: 480px;
+  max-width: 92vw;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--md-surface-container-low);
+  border-radius: var(--md-corner-xl);
+  box-shadow: var(--md-elev-3);
+  padding: 24px;
+  animation: md-rise 0.22s var(--md-ease-emph);
+}
+.dialog h2 {
+  margin: 0 0 20px;
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--md-on-surface);
+}
+@keyframes md-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes md-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
-* { box-sizing: border-box; }
+/* M3 文本字段（outlined） */
+.field {
+  margin-bottom: 18px;
+}
+.field > label {
+  display: block;
+  font-size: 12px;
+  color: var(--md-on-surface-variant);
+  margin-bottom: 8px;
+  letter-spacing: 0.4px;
+}
+.field input[type='text'],
+.field textarea,
+.field select {
+  width: 100%;
+  height: 48px;
+  border: 1px solid var(--md-outline);
+  background: var(--md-surface);
+  border-radius: var(--md-corner-sm);
+  padding: 0 14px;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.15s var(--md-ease), border-width 0.05s;
+}
+.field textarea {
+  height: auto;
+  min-height: 64px;
+  padding: 12px 14px;
+  resize: vertical;
+  line-height: 1.4;
+}
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  border-color: var(--md-primary);
+  border-width: 2px;
+}
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--md-on-surface-variant);
+  opacity: 0.7;
+}
+.field select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'><path d='M5 8l5 5 5-5' stroke='%23777680' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+.path-row {
+  display: flex;
+  gap: 10px;
+}
+.path-row input {
+  flex: 1;
+}
+.path-row .btn {
+  flex: none;
+  padding: 0 20px;
+}
 
-html, body, #app { height: 100%; margin: 0; }
-body { background: var(--page); color: var(--text); }
+/* 分段选择（类型切换）— M3 segmented */
+.type-toggle {
+  display: flex;
+  gap: 8px;
+  background: var(--md-surface-container);
+  padding: 4px;
+  border-radius: var(--md-corner-full);
+}
+.type-toggle button {
+  flex: 1;
+  height: 40px;
+  border-radius: var(--md-corner-full);
+  font-size: 14px;
+  color: var(--md-on-surface-variant);
+  transition: background 0.15s var(--md-ease), color 0.15s var(--md-ease);
+}
+.type-toggle button.on {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  font-weight: 500;
+}
 
-.shell {
-  height: 100%;
+.logo-pick {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.logo-pick img,
+.logo-pick .fallback {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--md-corner-md);
+  object-fit: cover;
+}
+.logo-pick .fallback {
   display: grid;
   place-items: center;
+  color: #fff;
+  font-weight: 500;
+}
+.logo-pick .fallback.folder {
+  background: var(--md-surface-container-highest);
+  color: var(--md-on-surface-variant);
+  font-size: 28px;
+}
+.logo-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+.file-label {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+.btn.ghost.danger {
+  background: transparent;
+  color: var(--md-error);
+  border-color: var(--md-outline);
+}
+.btn.ghost.danger:hover {
+  background: color-mix(in srgb, var(--md-error) 10%, transparent);
+  border-color: color-mix(in srgb, var(--md-error) 40%, var(--md-outline));
+  color: var(--md-error);
+  filter: none;
+}
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+/* ---------- 底部信息栈（提示条 + 导入进度卡） ----------
+   两者都是「贴着底边给一句话 / 一个进度」的信息层，共用一列，
+   顺序与间距交给 flex —— 以后再加第三块（比如「正在删除」）也不用重算各家的 bottom 偏移。
+   ⚠️ 居中的活由这一列干（left:50% + translateX(-50%)），子元素**不许再自己水平居中**：
+   以前提示条自己是 fixed 居中的，`md-snack` 动画里带着 `translate(-50%, …)`；
+   搬进这一列后那个 -50% 会把提示条整体左移半个身位，所以动画改成只做纵向位移。 */
+.bottom-stack {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  /* 整列都是纯信息，绝不能吃掉点击：它默认就落在编辑模式操作条（bottom:28px）那一条带上，
+     一旦能接事件，用户会发现「弹提示的那两秒里点收藏/删除没反应」——只有等它自己消失才行。 */
+  pointer-events: none;
+}
+/* 编辑模式下操作条占着底部，整列往上让一格，免得字压在按钮上 */
+.app.edit-mode .bottom-stack {
+  bottom: 88px;
+}
+
+/* ---------- M3 Snackbar（toast） ---------- */
+.snackbar {
+  max-width: 62vw;
+  background: var(--md-on-surface);
+  color: var(--md-surface);
+  padding: 14px 20px;
+  border-radius: var(--md-corner-sm);
+  font-size: 14px;
+  text-align: center;
+  box-shadow: var(--md-elev-3);
+  animation: md-snack 0.2s var(--md-ease);
+}
+
+/* ---------- 拖入导入进度卡 ----------
+   拖动十几个图标进来时，主进程要为**每个**图标起一个进程抽图标（实测每项 0.5–1.5s）；
+   原先这十几秒界面上什么都没有，看起来就是程序卡死。这张卡给出「已处理几个 / 共几个」
+   加当前正在处理谁 —— 有确定的终点，等待才不至于让人以为坏了。 */
+.import-card {
+  min-width: 268px;
+  max-width: 62vw;
+  padding: 12px 16px 10px;
+  border-radius: var(--md-corner-md);
+  background: var(--md-surface-container-high);
+  color: var(--md-on-surface);
+  box-shadow: var(--md-elev-3);
+  animation: md-rise 0.18s var(--md-ease-emph);
+}
+.ic-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.ic-count {
+  /* 数字等宽：计数在跳的时候宽度不抖，右边的对齐线才稳 */
+  font-variant-numeric: tabular-nums;
+  color: var(--md-on-surface-variant);
+}
+.ic-track {
+  margin: 8px 0 6px;
+  height: 5px;
+  border-radius: var(--md-corner-full);
+  background: var(--md-surface-container-highest);
+  overflow: hidden;
+}
+.ic-fill {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: var(--md-primary);
+  /* 计数是一项一项跳的，给个过渡让它「走」过去而不是硬切 */
+  transition: width 0.22s var(--md-ease);
+}
+.ic-note {
+  font-size: 12px;
+  color: var(--md-on-surface-variant);
+  /* 文件名可能很长：一行截断，别把卡片撑宽 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@keyframes md-snack {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- 拖入新增（drag & drop） ---------- */
+/* 悬停效果：从「中心闪烁的小卡」改成「整个窗口边缘的跑马灯」。
+   中心卡只框出一小块，既和整窗语言不协调，又在暗示"只有那块能放"—— 而实际上
+   整扇窗都是落点。现在四条边的虚线首尾相接、顺时针流转，配合内侧柔光，把整扇窗
+   读成一个落点；提示语缩成底部一枚小胶囊，不再抢注意力。
+   ⚠️ 所有装饰层都必须是 pointer-events:none，否则会挡住 dragover/drop，拖放直接失效。 */
+.drop-ring {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  overflow: hidden;
+  animation: md-fade 0.14s var(--md-ease);
+}
+/* 静帧底：1px 细轨 + 内侧柔光（缓慢呼吸），让"整扇窗都是落点"在视觉上成立 */
+.drop-frame {
+  position: absolute;
+  inset: 0;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--md-primary) 32%, transparent),
+    inset 0 0 46px color-mix(in srgb, var(--md-primary) 24%, transparent);
+  animation: md-drop-breathe 2.2s var(--md-ease) infinite;
+}
+/* 跑马灯：每条边一段重复虚线。上/右正向、下/左反向 → 看起来是首尾相接地绕窗跑一圈。
+   dash 尺寸只在 .ants 上定义一次，四条边共用（周期 = 亮段 + 间隔）。 */
+.ants {
+  position: absolute;
+  --ant-len: 22px;
+  --ant-gap: 14px;
+  --ant-w: 3px;
+  --ant-period: calc(var(--ant-len) + var(--ant-gap));
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--md-primary) 55%, transparent));
+}
+.ants.top,
+.ants.bottom {
+  left: 0;
+  right: 0;
+  height: var(--ant-w);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--md-primary) 0 var(--ant-len),
+    transparent var(--ant-len) var(--ant-period)
+  );
+}
+.ants.left,
+.ants.right {
+  top: 0;
+  bottom: 0;
+  width: var(--ant-w);
+  background: repeating-linear-gradient(
+    0deg,
+    var(--md-primary) 0 var(--ant-len),
+    transparent var(--ant-len) var(--ant-period)
+  );
+}
+.ants.top {
+  top: 0;
+  animation: md-ants-x 0.62s linear infinite;
+}
+.ants.bottom {
+  bottom: 0;
+  animation: md-ants-x 0.62s linear infinite reverse;
+}
+.ants.right {
+  right: 0;
+  animation: md-ants-y 0.62s linear infinite;
+}
+.ants.left {
+  left: 0;
+  animation: md-ants-y 0.62s linear infinite reverse;
+}
+/* 位移量必须正好等于 dash 周期，否则每转一圈会"跳一下"。
+   这里用 var(--ant-period) 而不是写死 36px：改亮段/间隔时不必再手动同步第二个地方
+   （同一个值写两处、后来只改一处的坑，本项目已经踩过）。 */
+@keyframes md-ants-x {
+  to {
+    background-position: var(--ant-period) 0;
+  }
+}
+@keyframes md-ants-y {
+  to {
+    background-position: 0 var(--ant-period);
+  }
+}
+/* 呼吸只动 opacity，不去动 box-shadow：否则浅/深两套主题的阴影色都得各写一遍 */
+@keyframes md-drop-breathe {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+/* 底部小胶囊提示（替代原来的中心大卡） */
+.drop-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  padding: 9px 20px;
+  border-radius: var(--md-corner-full);
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border: 1px solid color-mix(in srgb, var(--md-primary) 40%, transparent);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  box-shadow: var(--md-elev-2);
+  animation: md-hint-in 0.2s var(--md-ease-emph);
+}
+/* 不能复用 md-rise：它自带 transform，会把这里的 translateX(-50%) 顶掉、提示横向跑偏 */
+@keyframes md-hint-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+/* 拖入时内容后退半步，把注意力让给边缘跑马灯。
+   作用范围是整个侧栏与整个主区（含顶栏与 FAB）—— 否则会出现"顶栏和 FAB 亮着、
+   只有卡片变淡"的参差感。 */
+.app.drag-active .sidebar,
+.app.drag-active .main {
+  opacity: 0.62;
+  transition: opacity 0.16s var(--md-ease);
+}
+
+/* ---------- 自定义滚动条（M3，webkit / Electron） ---------- */
+/* 滚动容器是 .content（图标区内部滚动，见上面「主区 + 顶栏」的说明）。
+   收藏夹抽屉的 .fav-body 必须**一起**上这套样式，两个理由：
+     ① 滚动条样式统一，不然抽屉里是系统灰条；
+     ② 更关键 —— scrollbar-gutter: stable 预留的是「本元素滚动条的宽度」，
+        没上 ::-webkit-scrollbar 的元素在 Windows 上拿到的是覆盖式滚动条（宽度 0），
+        于是抽屉网格会比图标区宽出图标区滚动条那 10px，两边的卡片列就对不齐了。
+        两边都声明 width:10px，槽位才都是 10px。 */
+.sidebar-scroll,
+.content,
+.fav-body,
+.dialog {
+  scrollbar-width: thin;
+  scrollbar-color: var(--md-outline-variant) transparent;
+}
+.sidebar-scroll::-webkit-scrollbar,
+.content::-webkit-scrollbar,
+.fav-body::-webkit-scrollbar,
+.dialog::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.sidebar-scroll::-webkit-scrollbar-track,
+.content::-webkit-scrollbar-track,
+.fav-body::-webkit-scrollbar-track,
+.dialog::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb,
+.content::-webkit-scrollbar-thumb,
+.fav-body::-webkit-scrollbar-thumb,
+.dialog::-webkit-scrollbar-thumb {
+  background: var(--md-outline-variant);
+  border-radius: var(--md-corner-full);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb:hover,
+.content::-webkit-scrollbar-thumb:hover,
+.fav-body::-webkit-scrollbar-thumb:hover,
+.dialog::-webkit-scrollbar-thumb:hover {
+  background: var(--md-outline);
+}
+
+/* ---------- 设置面板 ---------- */
+/* 头部固定 + 主体内部滚动 + 底部「完成」常驻：窗口较矮时按钮也不会被推到需要滚动才能看到的位置。
+   覆盖 .dialog 的 overflow-y:auto 与统一 padding，改成整框 overflow:hidden、内部 set-body 滚动。 */
+.settings-dialog {
+  width: 560px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+.settings-dialog .set-head {
+  flex: none;
+  padding: 24px 24px 12px;
+}
+.settings-dialog .set-head h2 {
+  margin: 0;
+}
+.settings-dialog .set-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 24px 16px;
+}
+.settings-dialog .set-foot {
+  flex: none;
+  justify-content: flex-end;
+  margin-top: 0;
+  padding: 14px 24px;
+  border-top: 1px solid var(--md-outline-variant);
+  border-radius: 0 0 var(--md-corner-xl) var(--md-corner-xl);
+  background: var(--md-surface-container-low);
+}
+.set-section + .set-section {
+  margin-top: 26px;
+}
+.set-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--md-on-surface);
+}
+.set-title svg.md-icon {
+  color: var(--md-primary);
+}
+.set-desc {
+  font-size: 12px;
+  color: var(--md-on-surface-variant);
+  margin: 4px 0 14px;
+}
+/* 同一节里的次级小标题（如「图标显示」节中的「图标尺寸」）：一条分隔线把它和上面
+   的样式选择器分开，避免两组三档按钮挨在一起像是同一件事 */
+.set-sub {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--md-outline-variant);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--md-on-surface);
+}
+.set-sub-hint {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--md-on-surface-variant);
+}
+
+/* ---------- 操作指南弹窗 ---------- */
+/* 骨架直接沿用设置面板那套（头部固定 + 主体内部滚动 + 整框 overflow:hidden）：
+   内容同样是「一节一节往下排」，也照样可能超出窗口高度，没必要另写一遍 flex 三段式。 */
+.help-dialog {
+  width: 560px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+.help-dialog .help-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 24px 24px 10px;
+}
+.help-dialog .help-head h2 {
+  margin: 0;
+}
+.help-close {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--md-corner-full);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  transition:
+    background 0.15s var(--md-ease),
+    color 0.15s var(--md-ease);
+}
+.help-close:hover {
+  background: var(--md-surface-container-highest);
+  color: var(--md-on-surface);
+}
+.help-dialog .set-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 24px 24px;
+}
+.help-section + .help-section {
+  margin-top: 22px;
+}
+/* 两列：左列手势（胶囊），右列会发生什么。
+   用定宽的 grid 而不是 flex 自适应 —— 手势有长有短，自适应会让右侧说明的
+   左边缘参差不齐，一屏十几行扫下来很难读。 */
+.help-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.help-list li {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  gap: 12px;
+  align-items: start;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.help-gesture {
+  justify-self: start;
+  padding: 1px 8px;
+  border-radius: var(--md-corner-md);
+  /* 用主题色做淡底：深浅色主题下都自动成立，不用为暗色另配一套色 */
+  background: color-mix(in srgb, var(--md-primary) 10%, transparent);
+  color: var(--md-primary);
+  font-weight: 500;
+}
+.help-what {
+  color: var(--md-on-surface-variant);
+}
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+/* 主题卡：整块可点，选中态用 primary 描边 + 右上角对勾 */
+.theme-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-corner-md);
+  background: var(--md-surface-container-low);
+  transition: border-color 0.15s var(--md-ease), background 0.15s var(--md-ease),
+    box-shadow 0.15s var(--md-ease);
+}
+.theme-item:hover {
+  border-color: var(--md-outline);
+  background: var(--md-surface-container-high);
+}
+.theme-item.on {
+  border-color: var(--md-primary);
+  background: var(--md-surface-container-high);
+  box-shadow: inset 0 0 0 1px var(--md-primary);
+}
+/* 色板缩略图：背景=该主题 surface，横条=primary-container，圆点=primary / secondary-container */
+.theme-swatch {
+  position: relative;
+  height: 44px;
+  border-radius: var(--md-corner-sm);
+  border: 1px solid transparent;
+  overflow: hidden;
+  display: block;
+}
+.theme-swatch .sw-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 12px;
+  background: var(--sw-primary-container);
+}
+.theme-swatch .sw-dot {
+  position: absolute;
+  left: 10px;
+  bottom: 9px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--md-corner-full);
+  background: var(--sw-primary);
+}
+.theme-swatch .sw-dot.sub {
+  left: 30px;
+  width: 10px;
+  height: 10px;
+  bottom: 12px;
+  background: var(--sw-secondary-container);
+}
+.theme-name {
+  font-size: 13px;
+  color: var(--md-on-surface);
+  padding-left: 2px;
+}
+.theme-item.on .theme-name {
+  color: var(--md-primary);
+  font-weight: 500;
+}
+.theme-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: var(--md-primary);
+}
+.mode-toggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* ---------- 卡片显示样式（设置 → 图标显示） ----------
+   三种外观挂在 .app[data-style] 上，只覆盖 CSS 变量与少量规则；
+   DOM 结构与交互（长按进编辑、拖动排序、拖到分类归类、操作药丸）三套完全共用。 */
+
+/* ① 原生：还原系统的图标视图 —— 透明背景 + 图标 + 名称。
+   去掉底色 / 圆角 / 阴影 / 悬停上浮，只在悬停时给系统那样的浅色底反馈。
+   卡片因此明显变小：约 106×90（卡片样式约 119×104），且图标尺寸保持 Windows 默认的 48px。 */
+.app[data-style='native'] {
+  --card-min: calc(var(--icon-size) + 48px); /* 48 → 96px */
+  --card-row: calc(var(--icon-size) + 41px); /* 卡片矮一截：行高下限也跟着矮 */
+  --card-gap: 6px;
+  --card-pad: 8px 6px 10px;
+  --card-gap-inner: 7px;
+  --card-radius: var(--md-corner-sm);
+  --card-name-size: 12.5px;
+  --card-lift: 0px;
+}
+.app[data-style='native'] .card,
+.app[data-style='icon'] .card {
+  background: transparent;
+  box-shadow: none;
+}
+/* 悬停反馈改用系统那种浅色底，不再叠那层 4% 前景色（两层叠一起会发灰） */
+.app[data-style='native'] .card:hover::before,
+.app[data-style='icon'] .card:hover::before {
+  opacity: 0;
+}
+.app[data-style='native'] .card:hover {
+  background: var(--md-surface-container-highest);
+  box-shadow: none;
+}
+/* 菜单目标：比悬停更实的容器色 + primary 描边（hover 规则特异性更高，
+   但菜单打开时指针在菜单上、不在卡片上，所以不会打架） */
+.app[data-style='native'] .card.ctx-target {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  outline-color: var(--md-primary);
+}
+/* 这两种样式没有明显的卡片边缘可依附，落点竖线往间隙里收一点 */
+.app[data-style='native'] .card.drop-before::after,
+.app[data-style='icon'] .card.drop-before::after {
+  left: -5px;
+}
+.app[data-style='native'] .card.drop-after::after,
+.app[data-style='icon'] .card.drop-after::after {
+  right: -5px;
+}
+
+/* 上下插入：把指示线横过来（画在卡片的上边 / 下边）。
+   为什么需要它：以前落点只看指针的 X（左半 / 右半），所以「拖到上一行 / 下一行」时
+   指示线永远竖在左右，看上去就像只能左右排。sideOf 改成两维判方向之后，
+   从上下进来的落点必须横着画，否则用户看不到自己会插到哪儿。
+   ⚠️ 选择器带上 `.app`（特异性 0,4,0）并且**必须放在上面那条 native / icon 的
+   `left/right: -5px` 之后**：两者特异性相同，靠书写顺序决胜；写在前面会被它压掉，
+   横线就会左右各多伸一截、两种紧凑样式下还不一致。
+   ⚠️ 基础规则的 `top: 8px; bottom: 8px; width: 2px` 是给竖线用的，横线要先把
+   top/bottom 归零再各自设一条边，不能只改 height —— 否则两头打架、线会被拉到全高。 */
+.app .card.drop-y.drop-before::after,
+.app .card.drop-y.drop-after::after {
+  top: auto;
+  bottom: auto;
+  left: 8px;
+  right: 8px;
+  width: auto;
+  height: 3px;
+}
+.app .card.drop-y.drop-before::after {
+  top: -7px;
+}
+.app .card.drop-y.drop-after::after {
+  bottom: -7px;
+}
+
+/* ② 仅图标：只留图标本身（名称收起），图标「铺满」卡片 —— 一屏能放最多项目。
+   卡片 = 图标 + 4px × 2 内边距，所以无论图标选哪一档都正好吃满，四周只留 4px；
+   再配合主进程把图标自带的透明边距裁掉，各图标之间的大小差异才会真正消失。 */
+.app[data-style='icon'] {
+  --card-min: calc(var(--icon-size) + 8px);
+  --card-row: calc(var(--icon-size) + 8px); /* 卡片 = 图标 + 4px × 2 内边距，行高下限同理 */
+  --card-gap: 5px;
+  --card-pad: 4px;
+  /* ⚠️ 必须带单位（0px，不能写 0）：组卡封面用的是 `calc(var(--card-icon-radius) + 14px)`，
+     而无单位的 `0` 是 <number>、`14px` 是 <length>，`calc()` 里两者相加是**类型错误** →
+     整条 border-radius 在 computed-value 阶段被判无效 → 回退成初始值 0。
+     于是「仅图标」样式下封面一直是个直角方块（老代码 +6px 时也是），
+     而这条失效是**静默的**：没报错、没警告，只有把 computed 圆角打出来才看得见。 */
+  --card-icon-radius: 0px; /* 不加圆角：那会把满画布的图标四角切掉，看着像给图标套了外框 */
+}
+.app[data-style='icon'] .card .name {
+  display: none;
+}
+/* 不画任何卡片外框：悬停、菜单打开时都不出现方块底和描边，
+   反馈交给图标本身的缩放（菜单打开时另有菜单面板，位置足够明确）。 */
+.app[data-style='icon'] .card:hover,
+.app[data-style='icon'] .card.ctx-target {
+  background: transparent;
+  outline-color: transparent;
+  box-shadow: none;
+}
+.app[data-style='icon'] .card .logo,
+.app[data-style='icon'] .card .fallback {
+  transition: transform 0.16s var(--md-ease-emph);
+}
+.app[data-style='icon'] .card:hover .logo,
+.app[data-style='icon'] .card:hover .fallback {
+  transform: scale(1.06);
+}
+.app[data-style='icon'] .card.ctx-target .logo,
+.app[data-style='icon'] .card.ctx-target .fallback {
+  transform: scale(1.1);
+}
+/* 「添加」卡的加号字号已由 --card-plus-size 从图标尺寸推出，这里无需再写死 */
+.app[data-style='icon'] .add-card .hint {
+  display: none;
+}
+
+/* ---------- 设置面板里的「图标显示」样式选择器 ---------- */
+.style-preview {
+  position: relative;
+  height: 56px;
+  border-radius: var(--md-corner-sm);
+  background: var(--md-surface-container-highest);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  overflow: hidden;
+}
+/* 预览里画的「卡片外壳」：只有卡片样式画出来，另外两种一眼可见"没有壳" */
+.pv-shell {
+  display: none;
+  position: absolute;
+  inset: 7px 42px;
+  border-radius: var(--md-corner-md);
+  background: var(--md-surface);
+  border: 1px solid var(--md-outline-variant);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+}
+.pv-card .pv-shell {
+  display: block;
+}
+/* 预览里的「图标」：用主色方块代表应用图标 */
+.pv-app {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  background: var(--md-primary);
+  flex: none;
+}
+
+/* ---------- 编辑模式（长按图标进入）----------
+   一次长按让「整体图标」进入编辑态：卡片抖动 + 可点选 + 主区底部浮出操作条。
+   抖动用 transform: rotate —— CSS 动画的优先级高于普通声明，所以编辑态里卡片的
+   :hover 抬升会被动画的 transform 覆盖，这正是想要的（编辑态不抬升，只在抖）。 */
+@keyframes ql-wiggle {
+  0% {
+    transform: rotate(-1.6deg);
+  }
+  50% {
+    transform: rotate(1.6deg);
+  }
+  100% {
+    transform: rotate(-1.6deg);
+  }
+}
+.card.wiggle {
+  /* 相位偏移由每张卡的 --wiggle-delay（负值）给定，避免所有卡同步抖动像一整块在动 */
+  animation: ql-wiggle 0.34s ease-in-out infinite;
+  animation-delay: var(--wiggle-delay, 0s);
+  transform-origin: 50% 42%;
+  will-change: transform;
+}
+/* 选中：沿用 .card 已经预留的透明 outline，只改颜色 —— 不占位、不引起卡片尺寸跳动 */
+.card.selected {
+  outline-color: var(--md-primary);
+  background: var(--md-primary-container);
+}
+.card.selected .name {
+  color: var(--md-on-primary-container);
+}
+/* 已收藏小星：卡片右上角。底色借 surface（半透明）垫一下，
+   否则在「原生 / 仅图标」这两种透明卡样式下，星会跟图标糊在一起。 */
+.card .fav-mark {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--md-corner-full);
+  color: var(--md-primary);
+  background: color-mix(in srgb, var(--md-surface) 72%, transparent);
+  pointer-events: none; /* 纯标记，不抢卡片的点击 */
+}
+@media (prefers-reduced-motion: reduce) {
+  .card.wiggle {
+    animation: none;
+  }
+}
+
+/* ---------- 编辑模式底部悬浮操作条 ---------- */
+.edit-bar {
+  position: fixed;
+  left: 288px; /* 侧栏固定 288px 列：让操作条居中于「图标区」而不是整扇窗 */
+  right: 0;
+  bottom: 28px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none; /* 只有药丸/按钮可点，条内空白不挡下面的卡片 */
+  animation: md-rise 0.2s var(--md-ease-emph);
+}
+/* 分组弹窗开着时，操作条要浮到遮罩之上（遮罩 z-index 50）——
+   在弹窗里长按进编辑模式后，「移出分组 / 收藏 / 删除」这几颗按钮必须点得到。 */
+.app.group-open .edit-bar {
+  z-index: 55;
+}
+.edit-bar > * {
+  pointer-events: auto;
+}
+.edit-count {
+  font-size: 12px;
+  color: var(--md-on-surface-variant);
+  background: var(--md-surface-container-high);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-corner-full);
+  padding: 8px 14px;
+  box-shadow: var(--md-elev-2);
+}
+/* 计数与按钮都不许被压：窄窗下「全选 / 分组」折成两行比什么都难看。
+   （这里原本还有 .edit-hint 那条说明药丸的规则；2026-09-23 说明搬进操作指南后一并删了，
+   编辑条现在只有功能。） */
+.edit-count,
+.edit-btn {
+  flex: none;
+  white-space: nowrap;
+}
+.edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 22px;
+  border-radius: var(--md-corner-full);
+  border: 1px solid var(--md-outline-variant);
+  background: var(--md-surface-container-high);
+  color: var(--md-on-surface);
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: var(--md-elev-2);
+  transition: background 0.15s var(--md-ease), color 0.15s var(--md-ease);
+}
+.edit-btn:hover {
+  background: var(--md-surface-container-highest);
+}
+.edit-btn.danger {
+  background: var(--md-error);
+  color: var(--md-on-error);
+  border-color: transparent;
+}
+.edit-btn.danger:hover {
+  background: color-mix(in srgb, var(--md-error) 88%, var(--md-shadow));
+}
+.edit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+  pointer-events: none; /* 禁用时连 hover 态一起关掉 */
+}
+
+/* ---------- 删除确认框 ---------- */
+.confirm-dialog {
+  width: 420px;
+}
+.confirm-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--md-on-surface-variant);
+  margin: 0 0 20px;
+}
+/* 危险按钮：与主色按钮同形，换 error 配色（删除这类不可逆动作专用） */
+.btn.danger {
+  background: var(--md-error);
+  color: var(--md-on-error);
+}
+.btn.danger:hover {
+  background: color-mix(in srgb, var(--md-error) 88%, var(--md-shadow));
+  filter: none;
+}
+/* 预览里的「名称」 */
+.pv-line {
+  position: relative;
+  width: 32px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--md-on-surface-variant);
+  opacity: 0.45;
+  flex: none;
+}
+/* 仅图标：不画名称 */
+.pv-icon .pv-line {
+  display: none;
+}
+
+/* ---------- 设置面板里的「图标尺寸」选择器 ----------
+   三档用等比缩小的方块表达（24/32/48 按 0.75 画），差异一眼可见又不撑破面板。 */
+.size-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+.size-stage {
+  height: 44px;
+  border-radius: var(--md-corner-sm);
+  background: var(--md-surface-container-highest);
+  display: grid;
+  place-items: center;
+}
+.size-box {
+  border-radius: 4px;
+  background: var(--md-primary);
+}
+
+/* ---------- mini 模式（完整态 <-> mini 态，同一扇窗）----------
+   形态：无侧边栏 + Win11 亚克力半透明 + 只读收藏平铺 + 可置顶 + 可缩放。
+   半透明分两层：窗口层由主进程 setBackgroundMaterial('acrylic') 负责（并顺手把
+   窗口底色改全透明）；页面层只负责「别让自己的不透明底色把材质盖死」。
+   ⚠️ 与 transparent:true 互斥，主进程刻意不开 transparent（会丢系统圆角与阴影）。
+
+   视觉语言与完整态**刻意分开**：完整态是「一扇窗口」（侧栏 + 顶栏 + 带底色的卡片），
+   mini 是「一片浮在桌面上的启动器」—— Launchpad 式平铺：一块连续的半透明底、
+   一根发丝分割线、透明瓷砖（悬停才浮出药丸底 + 图标放大）。
+   2026-10-26 首版把完整态那张卡（底色 + 阴影 + 悬停上浮）直接缩进来，三层底
+   （卡片 / 面板 / 亚克力）叠在一起，Lei 反馈"不美观"，故整段重写。 */
+
+/* 窗口底色交给亚克力：页面任何一层都不能是不透明的 */
+body:has(.app.mini-on) {
+  background: transparent;
+}
+.app.mini-on {
+  background: transparent;
+  /* 完整态的网格列是「288px 侧栏 + 1fr」；mini 无侧栏，单列铺满 */
+  grid-template-columns: 1fr;
+}
+
+/* 整面板一层连续底：标题栏与网格区不再各刷各的底色（那样会切成两块，
+   亚克力上看就是「上面一条浅色带 + 下面一块略深的面」，很脏）。
+   分割只靠标题栏底部那根发丝线。
+   圆角 8px：与 Win11 窗口圆角齐平 —— 面板圆角大于窗口圆角会露出一圈透着
+   暗 tint 的月牙角（半透明时看不出，底色不透明后格外明显）。
+   浓度：100% 不透明，与完整态同款 surface（Lei 2026-10-27 二次反馈「还是太暗，
+   改成和原版一样」）。84% 那版在深色壁纸上仍透得出亚克力偏暗的 tint；
+   既已要不透，亚克力便被面板完全盖住 —— 窗口层保留调用不动（盖住即无副作用，
+   且日后想调回磨砂感只需改这一个数）。 */
+.mini-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--md-surface);
+
+  /* —— mini 自己的卡片几何 ——
+     mini 里图标比完整态略大：浮窗是「启动器」语义，图标大一点更好点。
+     ⚠️ 派生量必须与 --card-icon 声明在**同一个元素**上（自定义属性在声明它的
+     元素上解析）：圆角/文件夹图形/兜底字母一并在这里重算，只改 --card-icon 的话
+     其余三个仍按 .app 的 --icon-size 解算，大小会对不上。
+     行高下限压到「图标 + 40」：瓷砖内容（10px 上 padding + 图标 + 10px 间距 +
+     12px 名字行 + 8px 下 padding）本来就这么高，不额外撑行。 */
+  --card-icon: calc(var(--icon-size) + 8px);
+  --card-icon-radius: calc(var(--card-icon) / 8);
+  --card-folder-icon: calc(var(--card-icon) * 0.58);
+  --card-letter-size: calc(var(--card-icon) * 0.42);
+  --card-row: calc(var(--card-icon) + 40px);
+  --card-gap: 10px;
+  --card-pad: 10px 4px 8px;
+  --card-gap-inner: 10px;
+  --card-radius: var(--md-corner-md);
+}
+
+/* 标题栏 = 拖拽区。⚠️ 里面的按钮必须 no-drag，否则点击会被拖窗口吞掉 */
+.mini-bar {
+  flex: none;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 8px 0 12px;
+  -webkit-app-region: drag;
+  /* 发丝分割线：替代原来「网格区自己刷一块底色」的那种割裂感 */
+  border-bottom: 1px solid color-mix(in srgb, var(--md-on-surface) 10%, transparent);
+}
+/* 品牌区：星标 + 「收藏」+ 计数药丸。整组跟着标题栏拖，故不设 no-drag */
+.mini-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.mini-mark {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  box-shadow: var(--md-elev-1);
+}
+.mini-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--md-on-surface);
+  /* 标题也吃拖拽：禁掉文本选中，双击标题不会一片蓝 */
+  user-select: none;
+  cursor: default;
+  white-space: nowrap;
+}
+.mini-count {
+  flex: none;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: var(--md-corner-full);
+  display: inline-grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--md-on-surface-variant);
+  background: color-mix(in srgb, var(--md-on-surface) 10%, transparent);
+}
+/* 按钮胶囊：三枚圆钮收进一枚半透明药丸，比一字排开的三个散钮更像一件控件。
+   内描边让药丸在亚克力上也有轮廓（透明底会融进背景）。 */
+.mini-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--md-corner-full);
+  background: color-mix(in srgb, var(--md-on-surface) 7%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--md-on-surface) 9%, transparent);
+  -webkit-app-region: no-drag;
+}
+.mini-btn {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  padding: 0;
+  border-radius: var(--md-corner-full);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.15s var(--md-ease), color 0.15s var(--md-ease);
+}
+.mini-btn:hover {
+  background: color-mix(in srgb, var(--md-on-surface) 12%, transparent);
+  color: var(--md-on-surface);
+}
+.mini-btn:active {
+  background: color-mix(in srgb, var(--md-on-surface) 18%, transparent);
+}
+/* 置顶开启：主题色点亮，状态一眼可辨 */
+.mini-btn.on {
+  color: var(--md-primary);
+  background: color-mix(in srgb, var(--md-primary) 14%, transparent);
+}
+
+/* 网格区：透明到底（底色在 .mini-panel 上），只负责滚动。
+   排列 = 左上对齐、从顶部排起（Lei 2026-10-27 拍板）：不要垂直居中 ——
+   两三项顶在一条 520px 高的浮窗顶上、底下空一半很难看的那种"居中"是错的方向，
+   启动器面板就该像一列码好的瓷砖，多到溢出才滚动。 */
+.mini-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--md-on-surface) 24%, transparent) transparent;
+}
+/* 迷你滚动条：全局那条 10px 的槽在浮窗上太笨重 */
+.mini-body::-webkit-scrollbar {
+  width: 6px;
+}
+.mini-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.mini-body::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--md-on-surface) 24%, transparent);
+  border-radius: 3px;
+}
+
+/* —— 收藏平铺：Launchpad 式瓷砖 ——
+   完整态那张卡缩进浮窗会很脏（前述三层底），所以瓷砖本身透明：
+   悬停浮出一枚药丸底 + 图标同步放大，按下整块轻微缩一下。
+   选择器一律带 .app.mini-on（特异性 0,4,0）：要压过
+   .app[data-style='native|'icon'] .card:hover 那几条同权重规则。 */
+.app.mini-on .mini-panel .card {
+  background: transparent;
+  box-shadow: none;
+  padding: var(--card-pad);
+  border-radius: var(--card-radius);
+}
+/* 4% 前景色那层悬停膜（.card::before）不要了：药丸底已经给了反馈，
+   两层叠在一起会发灰 */
+.app.mini-on .mini-panel .card::before {
+  display: none;
+}
+.app.mini-on .mini-panel .card:hover {
+  transform: none;
+  box-shadow: none;
+  background: color-mix(in srgb, var(--md-on-surface) 9%, transparent);
+}
+.app.mini-on .mini-panel .card:active {
+  transform: scale(0.97);
+  background: color-mix(in srgb, var(--md-on-surface) 14%, transparent);
+}
+/* 图标放大：与「仅图标」样式同款曲线（0.16s emph），只动 transform */
+.app.mini-on .mini-panel .card .logo,
+.app.mini-on .mini-panel .card .fallback {
+  transition: transform 0.16s var(--md-ease-emph);
+}
+.app.mini-on .mini-panel .card:hover .logo,
+.app.mini-on .mini-panel .card:hover .fallback {
+  transform: scale(1.06);
+}
+/* 能出现在 mini 里的每项都已经是收藏了，角上那颗星是冗余信息，去掉 */
+.app.mini-on .mini-panel .fav-mark {
+  display: none;
+}
+/* 名字小一档，浮窗里更精致 */
+.app.mini-on .mini-panel .card .name {
+  font-size: 12px;
+}
+
+/* 空态：星形圆牌 + 两行文案。同样左上起步（不居中） */
+.mini-empty {
+  margin: 44px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
   padding: 24px;
 }
-
-.card {
-  width: min(480px, 100%);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 28px;
-}
-
-.brand { display: flex; align-items: center; gap: 14px; }
-
-.mark {
-  width: 46px;
-  height: 46px;
-  flex: none;
-  border-radius: 12px;
-  background: var(--accent);
-  color: #fff;
+.mini-empty-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--md-corner-full);
   display: grid;
   place-items: center;
-  font-size: 15px;
+  margin-bottom: 10px;
+  color: var(--md-primary);
+  background: color-mix(in srgb, var(--md-primary) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--md-primary) 22%, transparent);
+}
+.mini-empty-title {
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.5px;
+  color: var(--md-on-surface);
+}
+.mini-empty-sub {
+  font-size: 12px;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--md-on-surface) 60%, transparent);
 }
 
-h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
-.brand p { font-size: 13px; color: var(--muted); margin: 0; }
 
-.rows { margin: 24px 0; border-top: 1px solid var(--line); }
-
-.row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 11px 2px;
-  border-bottom: 1px solid var(--line);
-  font-size: 13px;
-}
-
-.row span { color: var(--muted); }
-.row b { font-weight: 600; }
-
-.actions { display: flex; gap: 8px; }
-
-button {
-  flex: 1;
-  padding: 9px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--text);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-button:hover { border-color: var(--accent); }
-button.on { color: var(--accent); border-color: var(--accent); }
-
-.err { color: #c0392b; font-size: 12px; margin: 14px 0 0; }
-.note { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 18px 0 0; }
