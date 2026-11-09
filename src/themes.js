@@ -341,28 +341,55 @@ export function getTheme(id) {
 // ---------------------------------------------------------------------------
 const NEUTRAL = {
   light: {
-    surface: '#fbfbfd',
-    'on-surface': '#1b1d22',
-    'surface-variant': '#eceef2',
-    'on-surface-variant': '#5f636d',
-    'surface-container-low': '#f5f6f8',
-    'surface-container': '#eef0f4',
-    'surface-container-high': '#e8eaee',
-    'surface-container-highest': '#e1e3e8',
-    outline: '#8b8f98',
-    'outline-variant': '#e3e5e9'
+    surface: '#f3f0fb',
+    'on-surface': '#2b2540',
+    'surface-variant': '#e9e2fa',
+    'on-surface-variant': '#6b6285',
+    'surface-container-low': 'rgba(255, 255, 255, 0.55)',
+    'surface-container': 'rgba(255, 255, 255, 0.68)',
+    'surface-container-high': 'rgba(255, 255, 255, 0.80)',
+    'surface-container-highest': 'rgba(255, 255, 255, 0.92)',
+    outline: '#8b7fb0',
+    'outline-variant': 'rgba(122, 92, 255, 0.16)'
   },
   dark: {
-    surface: '#15171b',
-    'on-surface': '#eceef2',
-    'surface-variant': '#2a2d33',
-    'on-surface-variant': '#a8acb5',
-    'surface-container-low': '#1b1e23',
-    'surface-container': '#202329',
-    'surface-container-high': '#272b31',
-    'surface-container-highest': '#2e323a',
-    outline: '#7d828c',
-    'outline-variant': '#33373e'
+    surface: '#171522',
+    'on-surface': '#f0ecfa',
+    'surface-variant': '#2e2a3d',
+    'on-surface-variant': '#b4abc9',
+    'surface-container-low': 'rgba(255, 255, 255, 0.045)',
+    'surface-container': 'rgba(255, 255, 255, 0.06)',
+    'surface-container-high': 'rgba(255, 255, 255, 0.09)',
+    'surface-container-highest': 'rgba(255, 255, 255, 0.12)',
+    outline: '#8f86a8',
+    'outline-variant': 'rgba(180, 160, 255, 0.18)'
+  }
+}
+
+// 柔光玻璃：光晕、玻璃层、亮边、柔和投影。
+// ⚠️ 全部是应用内纯 CSS，不用 setBackgroundMaterial / vibrancy / backdrop-filter
+// —— 那类系统材质在 Win/Mac 表现不同，而且会透出深色壁纸发灰（mini 版踩过）。
+// 这样两端渲染的是同一套渐变，观感一致，底色也始终是明亮的浅紫白。
+const GLASS = {
+  light: {
+    'glow-a': 'radial-gradient(58% 52% at 8% 2%, rgba(196, 168, 255, 0.55) 0%, rgba(196, 168, 255, 0) 100%)',
+    'glow-b': 'radial-gradient(52% 48% at 96% 96%, rgba(150, 205, 255, 0.48) 0%, rgba(150, 205, 255, 0) 100%)',
+    'glow-c': 'radial-gradient(40% 38% at 68% 6%, rgba(255, 190, 225, 0.34) 0%, rgba(255, 190, 225, 0) 100%)',
+    glass: 'rgba(255, 255, 255, 0.62)',
+    'glass-strong': 'rgba(255, 255, 255, 0.84)',
+    'glass-line': 'rgba(255, 255, 255, 0.92)',
+    'glass-shadow': '0 8px 28px rgba(88, 70, 150, 0.10), 0 1px 2px rgba(88, 70, 150, 0.06)',
+    'glass-shadow-hover': '0 14px 36px rgba(88, 70, 150, 0.16), 0 2px 6px rgba(88, 70, 150, 0.08)'
+  },
+  dark: {
+    'glow-a': 'radial-gradient(58% 52% at 8% 2%, rgba(110, 80, 190, 0.42) 0%, rgba(110, 80, 190, 0) 100%)',
+    'glow-b': 'radial-gradient(52% 48% at 96% 96%, rgba(40, 110, 170, 0.34) 0%, rgba(40, 110, 170, 0) 100%)',
+    'glow-c': 'radial-gradient(40% 38% at 68% 6%, rgba(170, 70, 140, 0.22) 0%, rgba(170, 70, 140, 0) 100%)',
+    glass: 'rgba(255, 255, 255, 0.06)',
+    'glass-strong': 'rgba(255, 255, 255, 0.11)',
+    'glass-line': 'rgba(255, 255, 255, 0.15)',
+    'glass-shadow': '0 8px 28px rgba(0, 0, 0, 0.28)',
+    'glass-shadow-hover': '0 14px 36px rgba(0, 0, 0, 0.42)'
   }
 }
 
@@ -373,6 +400,7 @@ function modernVars(themeId, mode) {
   const accent = theme[m].primary // 各主题原本就按明暗调过亮度，直接拿来当强调色
   return {
     ...n,
+    ...GLASS[m],
     primary: accent,
     'on-primary': m === 'dark' ? '#10131a' : '#ffffff',
     'primary-container': `color-mix(in srgb, ${accent} 12%, var(--md-surface))`,
