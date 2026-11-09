@@ -128,9 +128,10 @@
 ## 验证
 
 ```bash
-cargo test                       # Rust 单元测试（在 src-tauri 目录）
-pnpm build                        # 前端构建
-pnpm tauri build --no-bundle       # Windows 便携版
+cargo test                          # Rust 单元测试（在 src-tauri 目录）
+node design/probe/icon-repair.mjs    # 纯逻辑回归（一键图标修复）
+pnpm build                           # 前端构建
+pnpm tauri build --no-bundle          # Windows 便携版
 ```
 
 CI 见 `.github/workflows/build.yml`（windows-latest + macos-latest 双 job）。
