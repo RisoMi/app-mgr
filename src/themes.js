@@ -24,20 +24,21 @@ const ERROR = {
 }
 
 // 阴影与遮罩：中性，不随主题色变化，只随明暗变
+// 阴影：极轻、中性，只表达层级不做装饰。深色下用纯黑压出边界，不发灰。
 const ELEV = {
   light: {
-    'elev-1': '0 1px 2px rgba(27, 27, 33, 0.12), 0 1px 3px rgba(27, 27, 33, 0.08)',
-    'elev-2': '0 2px 6px rgba(27, 27, 33, 0.14), 0 1px 2px rgba(27, 27, 33, 0.1)',
-    'elev-3': '0 6px 14px rgba(27, 27, 33, 0.16), 0 2px 6px rgba(27, 27, 33, 0.1)',
-    shadow: '#1b1b21',
-    scrim: 'rgba(27, 27, 33, 0.42)'
+    'elev-1': '0 1px 2px rgba(20, 22, 28, 0.05), 0 1px 1px rgba(20, 22, 28, 0.03)',
+    'elev-2': '0 4px 12px rgba(20, 22, 28, 0.07), 0 1px 2px rgba(20, 22, 28, 0.04)',
+    'elev-3': '0 12px 32px rgba(20, 22, 28, 0.12), 0 2px 8px rgba(20, 22, 28, 0.06)',
+    shadow: '#14161c',
+    scrim: 'rgba(20, 22, 28, 0.38)'
   },
   dark: {
-    'elev-1': '0 1px 3px rgba(0, 0, 0, 0.5)',
-    'elev-2': '0 2px 6px rgba(0, 0, 0, 0.55)',
-    'elev-3': '0 6px 16px rgba(0, 0, 0, 0.6)',
+    'elev-1': '0 1px 2px rgba(0, 0, 0, 0.28)',
+    'elev-2': '0 4px 12px rgba(0, 0, 0, 0.36)',
+    'elev-3': '0 12px 32px rgba(0, 0, 0, 0.50)',
     shadow: '#000000',
-    scrim: 'rgba(0, 0, 0, 0.6)'
+    scrim: 'rgba(0, 0, 0, 0.62)'
   }
 }
 
@@ -332,23 +333,75 @@ export function getTheme(id) {
   return THEMES.find((t) => t.id === id) || THEMES[0]
 }
 
-// 取某主题某模式下的完整令牌（供设置面板画色板预览用）
-export function paletteOf(id, mode) {
-  const t = getTheme(id)
-  return { ...t[mode === 'dark' ? 'dark' : 'light'], ...ERROR[mode === 'dark' ? 'dark' : 'light'] }
+// ---------------------------------------------------------------------------
+// v0.3 「中性软表面」：Windows / macOS 共用同一套中性分层，不依赖任何平台材质
+// （Mica / Vibrancy / 毛玻璃都不用），所以两个平台看起来几乎一样。
+// 6 套主题在这里收敛成 6 种强调色 —— 中性底共用，主题只换一个色相，
+// 切主题不会把界面层级也一起换掉。
+// ---------------------------------------------------------------------------
+const NEUTRAL = {
+  light: {
+    surface: '#fbfbfd',
+    'on-surface': '#1b1d22',
+    'surface-variant': '#eceef2',
+    'on-surface-variant': '#5f636d',
+    'surface-container-low': '#f5f6f8',
+    'surface-container': '#eef0f4',
+    'surface-container-high': '#e8eaee',
+    'surface-container-highest': '#e1e3e8',
+    outline: '#8b8f98',
+    'outline-variant': '#e3e5e9'
+  },
+  dark: {
+    surface: '#15171b',
+    'on-surface': '#eceef2',
+    'surface-variant': '#2a2d33',
+    'on-surface-variant': '#a8acb5',
+    'surface-container-low': '#1b1e23',
+    'surface-container': '#202329',
+    'surface-container-high': '#272b31',
+    'surface-container-highest': '#2e323a',
+    outline: '#7d828c',
+    'outline-variant': '#33373e'
+  }
 }
 
-// 把整套令牌写到 :root 上的 CSS 变量，界面立即生效（无需重载）
-export function applyTheme(themeId, mode) {
+function modernVars(themeId, mode) {
   const theme = getTheme(themeId)
   const m = mode === 'dark' ? 'dark' : 'light'
-  const vars = { ...theme[m], ...ERROR[m], ...ELEV[m] }
+  const n = NEUTRAL[m]
+  const accent = theme[m].primary // 各主题原本就按明暗调过亮度，直接拿来当强调色
+  return {
+    ...n,
+    primary: accent,
+    'on-primary': m === 'dark' ? '#10131a' : '#ffffff',
+    'primary-container': `color-mix(in srgb, ${accent} 12%, var(--md-surface))`,
+    'on-primary-container': n['on-surface'],
+    secondary: n['on-surface-variant'],
+    'on-secondary': m === 'dark' ? '#15171b' : '#ffffff',
+    'secondary-container': `color-mix(in srgb, ${accent} 9%, var(--md-surface))`,
+    'on-secondary-container': n['on-surface'],
+    tertiary: accent,
+    'on-tertiary': m === 'dark' ? '#10131a' : '#ffffff',
+    ...ERROR[m],
+    ...ELEV[m]
+  }
+}
+
+// 设置面板的色板预览也走同一套合成，预览与实际应用不会出现两套颜色
+export function paletteOf(id, mode) {
+  return modernVars(id, mode)
+}
+
+// 整套令牌写到 :root，切换立即生效且不会闪
+export function applyTheme(themeId, mode) {
+  const m = mode === 'dark' ? 'dark' : 'light'
+  const vars = modernVars(themeId, m)
   const root = document.documentElement
   for (const key of Object.keys(vars)) {
     root.style.setProperty('--md-' + key, vars[key])
   }
-  root.dataset.theme = theme.id
+  root.dataset.theme = getTheme(themeId).id
   root.dataset.mode = m
-  // 让原生控件（滚动条、下拉框、输入框光标）跟随明暗
   root.style.colorScheme = m
 }

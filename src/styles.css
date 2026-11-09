@@ -1,35 +1,35 @@
 /* ===========================================================
-   Material Design 3 — 分类启动器 Design Tokens
-   Source color: Indigo #4A5BD4  (动态色可由壁纸取色，此处用静态方案)
+   AppMgr v0.3 — Neutral soft surfaces（跨平台一致设计语言）
+   纯色分层 + 1px 发丝线 + 极轻阴影 + 12px 圆角；不用 Mica / Vibrancy /
+   毛玻璃，Windows 与 macOS 观感几乎相同。强调色只落在选中态与状态点，
+   6 套主题 = 6 种强调色，中性底由 themes.js 合成后注入。
    =========================================================== */
 :root {
-  /* Color roles (Light) */
-  --md-primary: #4a5bd4;
+  --md-primary: #5b5bd6;
   --md-on-primary: #ffffff;
-  --md-primary-container: #dee0ff;
-  --md-on-primary-container: #06164d;
-  --md-secondary: #5b5d72;
+  --md-primary-container: #e9eaf6;
+  --md-on-primary-container: #1b1d22;
+  --md-secondary: #60636d;
   --md-on-secondary: #ffffff;
-  --md-secondary-container: #dfe1f9;
-  --md-on-secondary-container: #181b2c;
-  --md-tertiary: #775876;
-  --md-surface: #faf8ff;
-  --md-on-surface: #1b1b21;
-  --md-surface-variant: #e3e1ec;
-  --md-on-surface-variant: #46464f;
-  --md-surface-container-low: #f3f0f9;
-  --md-surface-container: #edeaf3;
-  --md-surface-container-high: #e7e4ee;
-  --md-surface-container-highest: #e1dee9;
-  --md-outline: #777680;
-  --md-outline-variant: #c7c5d0;
-  --md-error: #ba1a1a;
+  --md-secondary-container: #eef0f4;
+  --md-on-secondary-container: #1b1d22;
+  --md-tertiary: #5b5bd6;
+  --md-surface: #fbfbfd;
+  --md-on-surface: #1b1d22;
+  --md-surface-variant: #eceef2;
+  --md-on-surface-variant: #5f636d;
+  --md-surface-container-low: #f5f6f8;
+  --md-surface-container: #eef0f4;
+  --md-surface-container-high: #e8eaee;
+  --md-surface-container-highest: #e1e3e8;
+  --md-outline: #8b8f98;
+  --md-outline-variant: #e3e5e9;
+  --md-error: #c0392b;
   --md-on-error: #ffffff;
-  --md-error-container: #ffdad6;
-  --md-on-error-container: #410002;
-  --md-shadow: #1b1b21;
+  --md-error-container: #fdeceb;
+  --md-on-error-container: #5c1a16;
+  --md-shadow: #14161c;
 
-  /* Shape */
   --md-corner-none: 0px;
   --md-corner-xs: 4px;
   --md-corner-sm: 8px;
@@ -38,16 +38,20 @@
   --md-corner-xl: 28px;
   --md-corner-full: 999px;
 
-  /* Elevation (soft, surface-tinted) */
-  --md-elev-1: 0 1px 2px rgba(27, 27, 33, 0.12), 0 1px 3px rgba(27, 27, 33, 0.08);
-  --md-elev-2: 0 2px 6px rgba(27, 27, 33, 0.14), 0 1px 2px rgba(27, 27, 33, 0.1);
-  --md-elev-3: 0 6px 14px rgba(27, 27, 33, 0.16), 0 2px 6px rgba(27, 27, 33, 0.1);
+  --md-elev-1: 0 1px 2px rgba(20, 22, 28, 0.05), 0 1px 1px rgba(20, 22, 28, 0.03);
+  --md-elev-2: 0 4px 12px rgba(20, 22, 28, 0.07), 0 1px 2px rgba(20, 22, 28, 0.04);
+  --md-elev-3: 0 12px 32px rgba(20, 22, 28, 0.12), 0 2px 8px rgba(20, 22, 28, 0.06);
 
-  /* Motion */
   --md-ease: cubic-bezier(0.2, 0, 0, 1);
   --md-ease-emph: cubic-bezier(0.05, 0.7, 0.1, 1);
 
-  --md-font: 'Roboto', -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  /* 跨平台字体栈：Mac 落 SF Pro / PingFang，Windows 落 Segoe UI Variable /
+     微软雅黑 UI；都是中性无衬线，字形略有差异但观感一致。 */
+  --md-font: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'SF Pro Text',
+    'Segoe UI Variable Text', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei UI',
+    'Noto Sans SC', sans-serif;
+
+  --hairline: 1px solid var(--md-outline-variant);
 }
 
 * {
@@ -2563,3 +2567,97 @@ body:has(.app.mini-on) {
 }
 
 
+
+/* ===========================================================
+   v0.3 表面层补丁：只改视觉，不动几何 / 交互 / 拖拽 / 落点指示线。
+   ⚠️ 滚动条宽度刻意不改 —— .content 与 .fav-body 靠同一个 10px 槽位
+   做逐列对齐，改宽度会破坏收藏夹与图标区的网格对齐契约。
+   =========================================================== */
+
+/* 顶栏去掉平台相关的毛玻璃：纯色 + 发丝线，两平台一致 */
+.top-app-bar {
+  background: var(--md-surface);
+  backdrop-filter: none;
+  border-bottom: var(--hairline);
+}
+
+/* 侧栏收紧到 252px（mini 态仍是单列，见 .app.mini-on） */
+.app:not(.mini-on) { grid-template-columns: 252px 1fr; }
+.sidebar { border-right: var(--hairline); }
+
+/* 卡片样式：发丝描边替代阴影；hover 用边框强调，不再层层叠灰 */
+.app[data-style='card'] .card {
+  background: var(--md-surface);
+  border: var(--hairline);
+  box-shadow: none;
+}
+.app[data-style='card'] .card:hover {
+  border-color: color-mix(in srgb, var(--md-primary) 28%, var(--md-outline-variant));
+  box-shadow: var(--md-elev-2);
+}
+.app[data-style='card'] .card::before,
+.app[data-style='native'] .card::before,
+.app[data-style='icon'] .card::before { display: none; }
+.app[data-style='native'] .card:hover,
+.app[data-style='icon'] .card:hover { background: var(--md-surface-container); }
+
+/* 选中/菜单目标：主题色描边，不做大色块 */
+.card.ctx-target, .card.selected { outline-color: var(--md-primary); }
+
+/* 弹窗 / 菜单：16px 圆角 + 发丝线 + 轻阴影 */
+.dialog, .ctx-menu, .group-modal {
+  border: var(--hairline);
+  border-radius: var(--md-corner-lg);
+  box-shadow: var(--md-elev-3);
+}
+
+/* 输入与按钮：10px 圆角、发丝描边、统一 focus ring */
+.field input[type='text'], .search-row { border-radius: 10px; }
+.search-row { border: var(--hairline); }
+button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--md-primary) 55%, transparent);
+  outline-offset: 2px;
+}
+
+/* 顶栏 / mini 胶囊：中性容器底，强调色只留给置顶开启态 */
+.top-actions, .mini-actions {
+  background: var(--md-surface-container);
+  box-shadow: inset 0 0 0 1px var(--md-outline-variant);
+}
+.top-btn:hover, .mini-btn:hover { background: var(--md-surface-container-high); }
+
+/* mini 面板保持不透明，与完整态同一底色 */
+.mini-panel { background: var(--md-surface); }
+
+/* 滚动条只换中性色，宽度维持原值（对齐契约见上） */
+.sidebar-scroll::-webkit-scrollbar-thumb,
+.content::-webkit-scrollbar-thumb,
+.fav-body::-webkit-scrollbar-thumb,
+.dialog::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--md-on-surface) 18%, transparent);
+  border-radius: 999px;
+}
+
+/* 字重与字距：标题更轻，界面不「喊」 */
+.top-app-bar h1 { font-weight: 500; letter-spacing: -0.01em; }
+.mini-title { font-weight: 500; }
+
+/* 选中分类：两态都用强调色的淡底（深色下 9% 混合会掉成灰，这里显式给 14%）。
+   计数药丸改成半透明叠层，不再用纯黑 / 纯灰实心块抢视觉。 */
+.cat.active {
+  background: color-mix(in srgb, var(--md-primary) 14%, var(--md-surface));
+  color: var(--md-primary);
+}
+.cat.active .count,
+.cat:focus-within .count {
+  background: color-mix(in srgb, var(--md-primary) 18%, transparent);
+  color: var(--md-on-surface);
+}
+
+/* 新建分类：透明底 + 发丝线，hover 才浮出底色；两平台同一件控件 */
+.add-cat-btn {
+  background: transparent;
+  border: var(--hairline);
+  color: var(--md-on-surface-variant);
+}
+.add-cat-btn:hover { background: var(--md-surface-container-high); }

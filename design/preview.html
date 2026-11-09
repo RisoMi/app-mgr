@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>AppMgr UI preview</title>
+<link rel="stylesheet" href="../src/styles.css" />
+</head>
+<body>
+<div class="app" data-style="card" data-icon-size="32" id="app">
+  <aside class="sidebar">
+    <div class="titlebar">
+      <div class="lights">
+        <span class="light close"></span><span class="light min"></span><span class="light max"></span>
+      </div>
+    </div>
+    <div class="sidebar-scroll">
+      <div class="brand">
+        <img class="brand-logo" src="../src/assets/logo.png" alt="" />
+        <span class="brand-title">快捷启动器</span>
+      </div>
+      <div class="search-line">
+        <div class="search-row">
+          <span class="search-ico">&#128269;</span>
+          <input class="cat-search" type="text" placeholder="搜索快捷方式" />
+        </div>
+        <button class="add-cat-btn" title="新建分类">+</button>
+      </div>
+      <div class="cat active"><span>全部</span><span class="count">9</span></div>
+      <div class="cat"><span>未分类</span><span class="count">2</span></div>
+      <div class="cat has-ops"><span>开发</span><span class="count">5</span></div>
+      <div class="cat has-ops"><span>工具</span><span class="count">2</span></div>
+      <div class="cat has-ops"><span>设计</span><span class="count">3</span></div>
+    </div>
+    <div class="sidebar-foot"><span>设置</span></div>
+  </aside>
+
+  <main class="main">
+    <header class="top-app-bar">
+      <div>
+        <div class="title-row">
+          <h1>全部</h1>
+          <button class="help-btn" title="操作指南">?</button>
+        </div>
+        <div class="sub">共 9 项</div>
+      </div>
+      <div class="top-actions">
+        <button class="top-btn top-pin on" title="置顶">&#9670;</button>
+        <button class="mini-entry top-btn" title="mini 模式">&#9974;</button>
+      </div>
+    </header>
+    <div class="content"><div class="grid" id="grid"></div></div>
+  </main>
+</div>
+
+<script>
+  // 静态预览：用真实 CSS + 真实 class 名，图标用内联 SVG 占位（不依赖 Tauri）
+  var palette = ['#5b5bd6', '#2f9e79', '#d07a3c', '#4a78c4', '#b4567f', '#6f7b8c', '#3aa0a8', '#8a63c0', '#c25b5b']
+  var names = ['Visual Studio Code', 'Terminal', 'Figma', 'Chrome', 'Notion', '设计稿', '工具箱', 'Obsidian', '音乐']
+  var grid = document.getElementById('grid')
+  grid.innerHTML = names.map(function (name, i) {
+    var c = palette[i]
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">' +
+      '<rect x="4" y="4" width="56" height="56" rx="14" fill="' + c + '"/>' +
+      '<circle cx="32" cy="32" r="11" fill="rgba(255,255,255,.85)"/></svg>'
+    return '<div class="card"><span class="icon-box">' +
+      '<img class="logo" draggable="false" src="data:image/svg+xml,' + encodeURIComponent(svg) + '" alt="" />' +
+      '</span><div class="name">' + name + '</div></div>'
+  }).join('')
+</script>
+<script type="module">
+  import { applyTheme } from '../src/themes.js'
+  var p = new URLSearchParams(location.search)
+  applyTheme(p.get('theme') || 'indigo', p.get('mode') === 'dark' ? 'dark' : 'light')
+  if (p.get('style')) document.getElementById('app').dataset.style = p.get('style')
+</script>
+</body>
+</html>
