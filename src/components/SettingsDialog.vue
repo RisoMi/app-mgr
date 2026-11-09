@@ -1,6 +1,19 @@
 <script setup>
-import { state, setTheme, setMode, setCardStyle, CARD_STYLES, setIconSize, ICON_SIZES } from '../store'
+import { ref, nextTick } from 'vue'
+import {
+  state,
+  setTheme,
+  setMode,
+  setCardStyle,
+  CARD_STYLES,
+  setIconSize,
+  ICON_SIZES,
+  persist,
+  showToast
+} from '../store'
 import { THEMES, paletteOf } from '../themes'
+import { electronAPI } from '../api'
+import { repairAllIcons } from '../icon-repair'
 import MdIcon from './MdIcon.vue'
 
 const emit = defineEmits(['close'])
@@ -16,6 +29,42 @@ function swatchStyle(id) {
     '--sw-primary-container': p['primary-container'],
     '--sw-secondary-container': p['secondary-container'],
     '--sw-on-surface': p['on-surface']
+  }
+}
+
+// 「应用图标修复」：一键重抽所有项目的系统图标。
+// 具体规则在 icon-repair.js（纯函数、可单测）；这里只负责进度、落盘与提示。
+const fixing = ref(false)
+const fixMsg = ref('')
+
+async function repairIcons() {
+  if (fixing.value) return
+  fixing.value = true
+  fixMsg.value = '准备中…'
+  try {
+    await nextTick() // 先把「正在修复…」渲染出来
+    const res = await repairAllIcons({
+      items: state.items,
+      extractIcon: electronAPI.extractIcon,
+      onProgress: (n, total) => {
+        fixMsg.value = `正在修复 ${n} / ${total}…`
+      }
+    })
+    if (!res.total) {
+      fixMsg.value = '没有可修复的项目'
+      showToast('没有可修复的项目')
+      return
+    }
+    if (res.ok) persist()
+    fixMsg.value =
+      `已修复 ${res.ok} 项` +
+      (res.skipped ? `，跳过 ${res.skipped} 项（无系统图标或路径失效）` : '')
+    showToast(`图标修复完成：${res.ok} 项`)
+  } catch (e) {
+    fixMsg.value = '修复中断：' + (e && e.message ? e.message : String(e))
+    showToast('图标修复中断')
+  } finally {
+    fixing.value = false
   }
 }
 </script>
@@ -115,6 +164,23 @@ function swatchStyle(id) {
             <span class="theme-name">{{ z.label }}</span>
             <MdIcon v-if="state.settings.iconSize === z.id" class="theme-check" name="check" :size="16" />
           </button>
+        </div>
+      </section>
+
+      <section class="set-section">
+        <div class="set-title">
+          <MdIcon name="refresh" :size="18" />
+          <span>图标维护</span>
+        </div>
+        <div class="set-desc">
+          重新从应用 / 快捷方式抽取系统图标，会覆盖已有图标；抽不到的项目保留原样。
+        </div>
+        <div class="fix-row">
+          <button class="btn ghost" :disabled="fixing" @click="repairIcons">
+            <MdIcon name="refresh" :size="16" />
+            <span>{{ fixing ? '正在修复…' : '应用图标修复' }}</span>
+          </button>
+          <span v-if="fixMsg" class="fix-msg">{{ fixMsg }}</span>
         </div>
       </section>
 
