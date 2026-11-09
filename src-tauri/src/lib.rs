@@ -87,41 +87,84 @@ fn split_args(s: &str) -> Vec<String> {
 }
 
 #[cfg(target_os = "windows")]
-fn spawn_launch(path: &str, args: &str, work_dir: &str, is_dir: bool) -> Result<(), String> {
-    use std::process::Command;
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+/// 启动方式判定（纯函数，可单测）。
+/// ⚠️ 普通可执行文件一律直接 CreateProcess，**绝不经过 cmd**：
+/// cmd.exe 是控制台子系统程序，GUI 应用 spawn 它时 Windows 会新建一个控制台窗口，
+/// `start` 一执行完就退出 —— 就是双击项目时那个一闪而逝的黑框。
+#[cfg(target_os = "windows")]
+#[derive(Debug, PartialEq, Eq)]
+enum LaunchKind {
+    ShellStart, // 目录 / .lnk / .url：需要 ShellExecute 语义，仍借 cmd start
+    Batch,      // .bat / .cmd：控制台脚本，保留可见控制台
+    ScriptHost, // .vbs / .vbe / .wsf：wscript.exe
+    Direct      // 普通 exe / 带参数：直接 CreateProcess
+}
+
+#[cfg(target_os = "windows")]
+fn launch_kind(path: &str, is_dir: bool) -> LaunchKind {
     let lower = path.to_ascii_lowercase();
-    let mut cmd = if is_dir || lower.ends_with(".lnk") || lower.ends_with(".url") {
-        // 文件夹 / 快捷方式交给 ShellExecute（cmd start），.lnk 的目标由系统自动解析
-        let mut c = Command::new("cmd");
-        c.arg("/c").arg("start").arg("").arg(path);
-        c
+    if is_dir || lower.ends_with(".lnk") || lower.ends_with(".url") {
+        LaunchKind::ShellStart
     } else if lower.ends_with(".bat") || lower.ends_with(".cmd") {
-        let mut c = Command::new("cmd");
-        c.arg("/c").arg(path);
-        c
+        LaunchKind::Batch
     } else if lower.ends_with(".vbs") || lower.ends_with(".vbe") || lower.ends_with(".wsf") {
-        let mut c = Command::new("wscript.exe");
-        c.arg(path);
-        c
-    } else if args.trim().is_empty() {
-        let mut c = Command::new("cmd");
-        c.arg("/c").arg("start").arg("").arg(path);
-        c
+        LaunchKind::ScriptHost
     } else {
-        Command::new(path)
-    };
-    let is_batch = lower.ends_with(".bat") || lower.ends_with(".cmd");
-    if !args.trim().is_empty() && !is_batch {
-        for a in split_args(args) { cmd.arg(a); }
+        LaunchKind::Direct
     }
-    if !work_dir.trim().is_empty() { cmd.current_dir(work_dir); }
+}
+
+#[cfg(target_os = "windows")]
+fn spawn_launch(path: &str, args: &str, work_dir: &str, is_dir: bool) -> Result<(), String> {
+    use std::os::windows::process::CommandExt;
+    use std::process::Command;
+
+    let kind = launch_kind(path, is_dir);
+    let mut cmd = match kind {
+        LaunchKind::ShellStart => {
+            let mut c = Command::new("cmd");
+            c.arg("/c").arg("start").arg("").arg(path);
+            // cmd 只负责解析 start 后立刻退出，不需要控制台窗口
+            c.creation_flags(CREATE_NO_WINDOW);
+            c
+        }
+        LaunchKind::Batch => {
+            // 批处理是控制台程序，保留可见控制台：不给它控制台会让内部
+            // `for /f` 之类的命令各自 AllocConsole，反而弹出一串黑窗并卡住（旧版踩过）
+            let mut c = Command::new("cmd");
+            c.arg("/c").arg(path);
+            c
+        }
+        LaunchKind::ScriptHost => {
+            let mut c = Command::new("wscript.exe");
+            c.arg(path);
+            c
+        }
+        LaunchKind::Direct => Command::new(path),
+    };
+
+    if !args.trim().is_empty() && kind != LaunchKind::Batch {
+        for a in split_args(args) {
+            cmd.arg(a);
+        }
+    }
+    if !work_dir.trim().is_empty() {
+        cmd.current_dir(work_dir);
+    }
+
     match cmd.spawn() {
         Ok(_) => Ok(()),
         Err(e) => {
-            // 非 PE（脚本 / 文档）CreateProcess 会失败，降级到 ShellExecute
+            // 非 PE（脚本文档等）CreateProcess 会失败，降级到 ShellExecute，
+            // 同样不新建控制台窗口
             let mut c = Command::new("cmd");
             c.arg("/c").arg("start").arg("").arg(path);
-            for a in split_args(args) { c.arg(a); }
+            for a in split_args(args) {
+                c.arg(a);
+            }
+            c.creation_flags(CREATE_NO_WINDOW);
             c.spawn().map_err(|e2| format!("{} / {}", e, e2))?;
             Ok(())
         }
@@ -584,6 +627,20 @@ mod tests {
             }
         }
         assert!(got, "没有任何系统 exe 抽出了图标");
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn windows_launch_plan_avoids_cmd_for_normal_exe() {
+        // 主诉回归：普通 exe 不能再落到 cmd /c start（会闪控制台窗口）
+        assert_eq!(launch_kind(r"C:\Apps\Foo.exe", false), LaunchKind::Direct);
+        assert_eq!(launch_kind(r"C:\Apps\notes.txt", false), LaunchKind::Direct);
+        assert_eq!(launch_kind(r"C:\Apps\Foo.lnk", false), LaunchKind::ShellStart);
+        assert_eq!(launch_kind(r"C:\Apps\Foo.url", false), LaunchKind::ShellStart);
+        assert_eq!(launch_kind(r"C:\Apps\Foo.exe", true), LaunchKind::ShellStart);
+        assert_eq!(launch_kind(r"C:\Apps\run.bat", false), LaunchKind::Batch);
+        assert_eq!(launch_kind(r"C:\Apps\run.cmd", false), LaunchKind::Batch);
+        assert_eq!(launch_kind(r"C:\Apps\run.vbs", false), LaunchKind::ScriptHost);
     }
 
     #[test]

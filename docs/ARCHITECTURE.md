@@ -74,8 +74,13 @@
 
 `launch_item` 收到 `{ path, args, type, workDir }`：
 
-- Windows：目录 / `.lnk` / `.url` → `cmd /c start`；`.bat/.cmd` → `cmd /c`；
-  `.vbs` → `wscript`；带参数直接起进程，非 PE 失败时降级到 ShellExecute
+- Windows：**普通 exe / 带参数 → 直接 CreateProcess，不经 `cmd`**
+  （`cmd.exe` 是控制台程序，GUI 应用起它会被系统新建一个控制台窗口，`start`
+  执行完就关 = 双击项目时一闪而逝的黑框）；目录 / `.lnk` / `.url` →
+  `cmd /c start` 并带 `CREATE_NO_WINDOW`；`.bat/.cmd` → `cmd /c`
+  **保留可见控制台**（不给它控制台会让内部 `for /f` 各自弹黑窗）；
+  `.vbs` → `wscript`；非 PE 的 CreateProcess 失败则降级到 ShellExecute（同样 NO_WINDOW）。
+  分支判定抽在 `launch_kind()` 纯函数里，有单测守着。
 - macOS：`.app` / 目录 → `open`；`.sh/.command` → `/bin/sh`；`.scpt` → `osascript`；
   失败降级 `open`
 - 其他平台：`xdg-open`
