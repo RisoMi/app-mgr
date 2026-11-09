@@ -1,0 +1,93 @@
+:root {
+  --surface: #ffffff;
+  --page: #f4f3f8;
+  --text: #1c1b21;
+  --muted: #625f6d;
+  --line: rgba(28, 27, 33, 0.12);
+  --accent: #534ab7;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #23212b;
+    --page: #17161d;
+    --text: #f2f0f7;
+    --muted: #aaa6ba;
+    --line: rgba(242, 240, 247, 0.14);
+    --accent: #afa9ec;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body, #app { height: 100%; margin: 0; }
+body { background: var(--page); color: var(--text); }
+
+.shell {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.card {
+  width: min(480px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.brand { display: flex; align-items: center; gap: 14px; }
+
+.mark {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+.brand p { font-size: 13px; color: var(--muted); margin: 0; }
+
+.rows { margin: 24px 0; border-top: 1px solid var(--line); }
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 2px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.row span { color: var(--muted); }
+.row b { font-weight: 600; }
+
+.actions { display: flex; gap: 8px; }
+
+button {
+  flex: 1;
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+button:hover { border-color: var(--accent); }
+button.on { color: var(--accent); border-color: var(--accent); }
+
+.err { color: #c0392b; font-size: 12px; margin: 14px 0 0; }
+.note { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 18px 0 0; }
