@@ -89,6 +89,14 @@
 只有托盘「退出」会真结束进程。渲染层点交通灯关闭只是发 `close()`，
 由这个拦截统一收进后台。
 
+**macOS 的 Dock 唤回是另一条路**：点 Dock 图标触发
+`applicationShouldHandleReopen` → Tauri 的 `RunEvent::Reopen`，
+所以 `run()` 用 `build()` + `app.run(callback)` 接住它，和托盘菜单、托盘左键
+共用 `show_main_window()`。macOS 上要先 `AppHandle::show()` 把整个应用 unhide，
+再 `show()` + `set_focus()` 主窗口——应用处于 hidden 状态时只 show 窗口是看不见的。
+`RunEvent::Reopen` 与 `AppHandle::show` 都是 macOS-only 编译项，必须包 `cfg`，
+否则 Windows 编译失败。
+
 ## 数据目录
 
 - Windows：`current_exe().parent()/data`，写入探针文件验可写；不可写回退 `app_data_dir()`

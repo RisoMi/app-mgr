@@ -469,6 +469,21 @@ async fn import_files(app: AppHandle, paths: Vec<String>, category_id: String) -
 
 // ---------------------------------------------------------------- 托盘 / 关闭
 
+/// 把隐藏的主窗口重新显示并聚焦。
+/// ⚠️ macOS 上必须先 `AppHandle::show()` 把整个应用 unhide：点 Dock 图标时
+/// NSApplication 可能仍处于 hidden 状态，只 show 窗口是看不见的。
+/// 托盘「显示窗口」、托盘左键、Dock 点开三条路径共用这一处。
+fn show_main_window(app: &AppHandle) {
+    #[cfg(target_os = "macos")]
+    {
+        let _ = app.show();
+    }
+    if let Some(w) = app.get_webview_window("main") {
+        let _ = w.show();
+        let _ = w.set_focus();
+    }
+}
+
 fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     use tauri::menu::{Menu, MenuItem};
     use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
@@ -481,21 +496,13 @@ fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
-            "show" => {
-                if let Some(w) = app.get_webview_window("main") {
-                    let _ = w.show();
-                    let _ = w.set_focus();
-                }
-            }
+            "show" => show_main_window(app),
             "quit" => app.exit(0),
             _ => {}
         })
         .on_tray_icon_event(|tray, event| {
             if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = event {
-                if let Some(w) = tray.app_handle().get_webview_window("main") {
-                    let _ = w.show();
-                    let _ = w.set_focus();
-                }
+                show_main_window(tray.app_handle());
             }
         });
     if let Some(icon) = app.default_window_icon() {
@@ -507,13 +514,13 @@ fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             setup_tray(app.handle())?;
             Ok(())
         })
-        // 关闭 = 收进托盘（macOS 上也是同一套语义），只有托盘「退出」真结束进程
+        // 关闭 = 收进后台：窗口 hide 但进程继续跑，托盘 / 菜单栏可唤回。
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
@@ -529,8 +536,21 @@ pub fn run() {
             extract_icon,
             import_files
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    // ⚠️ macOS：点 Dock 图标会触发 applicationShouldHandleReopen（RunEvent::Reopen）。
+    // 之前只 hide() 没接这个事件 —— 关窗后进程还活着、Dock 点了却没任何反应
+    // （Windows 有托盘双击兜底，这条路径在 mac 上一直是空的）。
+    // Reopen 与 AppHandle::show 都是 macOS-only 编译项，必须包 cfg，否则 Windows 编译失败。
+    app.run(|handle, event| {
+        let _ = &handle;
+        match event {
+            #[cfg(target_os = "macos")]
+            tauri::RunEvent::Reopen { .. } => show_main_window(handle),
+            _ => {}
+        }
+    });
 }
 
 #[cfg(test)]
