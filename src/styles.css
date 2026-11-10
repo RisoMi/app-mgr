@@ -118,7 +118,8 @@ select {
   --card-icon: var(--icon-size);
   --card-icon-radius: calc(var(--icon-size) / 8);
   --card-folder-icon: calc(var(--icon-size) * 0.58);
-  --card-letter-size: calc(var(--icon-size) * 0.42);
+  /* 无图标时的汉字 / 字母要基本占满色块（Lei 反馈 0.42 太小） */
+  --card-letter-size: calc(var(--icon-size) * 0.82);
   --card-plus-size: calc(var(--icon-size) * 0.62);
 }
 .app[data-icon-size='24'] {
@@ -1063,6 +1064,9 @@ svg.md-icon {
   color: #fff;
   font-size: var(--card-letter-size);
   font-weight: 500;
+  line-height: 1;
+  /* 极端字形（如超宽汉字）不越出色块 */
+  overflow: hidden;
 }
 /* —— 双击「图标回应」动效（方案 E）——
    双击卡片启动程序时，让**图标本体**活起来：一次带过冲的弹跳放大 + 轻微歪头（像被点醒），
@@ -1450,6 +1454,9 @@ svg.md-icon {
   place-items: center;
   color: #fff;
   font-weight: 500;
+  font-size: 44px; /* 56px 预览方块，跟卡片同一档占比 */
+  line-height: 1;
+  overflow: hidden;
 }
 .logo-pick .fallback.folder {
   background: var(--md-surface-container-highest);
@@ -2376,7 +2383,7 @@ body:has(.app.mini-on) {
   --card-icon: calc(var(--icon-size) + 8px);
   --card-icon-radius: calc(var(--card-icon) / 8);
   --card-folder-icon: calc(var(--card-icon) * 0.58);
-  --card-letter-size: calc(var(--card-icon) * 0.42);
+  --card-letter-size: calc(var(--card-icon) * 0.82);
   --card-row: calc(var(--card-icon) + 40px);
   --card-gap: 10px;
   --card-pad: 10px 4px 8px;

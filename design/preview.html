@@ -57,13 +57,28 @@
   var palette = ['#5b5bd6', '#2f9e79', '#d07a3c', '#4a78c4', '#b4567f', '#6f7b8c', '#3aa0a8', '#8a63c0', '#c25b5b']
   var names = ['Visual Studio Code', 'Terminal', 'Figma', 'Chrome', 'Notion', '设计稿', '工具箱', 'Obsidian', '音乐']
   var grid = document.getElementById('grid')
+  // 后 3 张用兜底形态，方便核对无图标时的汉字 / 字母 / 文件夹是否占满
+  var fallbacks = [
+    { text: '豆', bg: '#5b5bd6' },
+    { text: 'Q', bg: '#2f9e79' },
+    { folder: true }
+  ]
   grid.innerHTML = names.map(function (name, i) {
-    var c = palette[i]
-    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">' +
-      '<rect x="4" y="4" width="56" height="56" rx="14" fill="' + c + '"/>' +
-      '<circle cx="32" cy="32" r="11" fill="rgba(255,255,255,.85)"/></svg>'
-    return '<div class="card"><span class="icon-box">' +
-      '<img class="logo" draggable="false" src="data:image/svg+xml,' + encodeURIComponent(svg) + '" alt="" />' +
+    var inner
+    if (i >= 6) {
+      var f = fallbacks[i - 6]
+      inner = f.folder
+        ? '<div class="fallback folder"><svg class="md-icon" viewBox="0 0 24 24" fill="currentColor">' +
+          '<path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg></div>'
+        : '<div class="fallback" style="background:' + f.bg + '">' + f.text + '</div>'
+    } else {
+      var c = palette[i]
+      var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">' +
+        '<rect x="4" y="4" width="56" height="56" rx="14" fill="' + c + '"/>' +
+        '<circle cx="32" cy="32" r="11" fill="rgba(255,255,255,.85)"/></svg>'
+      inner = '<img class="logo" draggable="false" src="data:image/svg+xml,' + encodeURIComponent(svg) + '" alt="" />'
+    }
+    return '<div class="card"><span class="icon-box">' + inner +
       '</span><div class="name">' + name + '</div></div>'
   }).join('')
 </script>
