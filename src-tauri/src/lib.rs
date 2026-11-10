@@ -233,12 +233,27 @@ fn launch_item(payload: Value) -> Result<Value, String> {
     }
 }
 
+/// Explorer 的 /select, 参数：路径含空格必须整体加引号，否则会从空格处截断，
+/// 找不到目标就回退打开系统「文档」库（Lei 真机反馈）。抽成纯函数便于单测。
+#[cfg(target_os = "windows")]
+fn windows_reveal_arg(normalized: &str, exists: bool) -> String {
+    let p = Path::new(normalized);
+    if exists {
+        format!("/select,\"{}\"", normalized)
+    } else if let Some(parent) = p.parent() {
+        format!("\"{}\"", parent.display())
+    } else {
+        format!("/select,\"{}\"", normalized)
+    }
+}
+
 #[tauri::command]
 fn reveal_item(path: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     let mut c = {
+        let normalized = path.replace('/', "\\");
         let mut c = std::process::Command::new("explorer");
-        c.arg(format!("/select,{}", path.replace('/', "\\")));
+        c.arg(windows_reveal_arg(&normalized, Path::new(&normalized).exists()));
         c
     };
     #[cfg(target_os = "macos")]
@@ -284,7 +299,7 @@ fn icon_bytes(path: &str) -> Option<(&'static str, Vec<u8>)> {
     } else {
         path.to_string()
     };
-    pe::extract(&target).map(|ico| ("image/x-icon", ico))
+    pe::extract(&target)
 }
 
 #[cfg(target_os = "macos")]
@@ -382,7 +397,7 @@ mod pe {
         }
         None
     }
-    /// 资源目录里找一条 (id 或第一个, 下一层偏移相对资源段)
+    /// 资源目录里的 ID 条目（命名条目在前面，NumberOfNamedEntries 之后才是 ID）
     fn entry(b: &[u8], dir_off: usize, want: Option<u32>) -> Option<(u32, u32)> {
         let named = u16le(b, dir_off + 12)? as usize;
         let count = u16le(b, dir_off + 14)? as usize;
@@ -397,10 +412,18 @@ mod pe {
         }
         None
     }
-    fn data_of(b: &[u8], secs: &[Sec], base: usize, _rsrc_rva: u32, typ: u32, want: Option<u32>) -> Option<Vec<u8>> {
-        let (_, type_sub) = entry(b, base, Some(typ))?;
-        let type_dir = base + (type_sub & 0x7fff_ffff) as usize;
-        let (_, id_sub) = entry(b, type_dir, want)?;
+    /// IMAGE_RESOURCE_DIR_STRING_U：长度(WORD) + UTF-16LE 字符
+    fn res_name(b: &[u8], base: usize, field: u32) -> Option<String> {
+        if field & 0x8000_0000 == 0 { return None; }
+        let o = base + (field & 0x7fff_ffff) as usize;
+        let len = u16le(b, o)? as usize;
+        if len > 256 { return None; }
+        let mut units = Vec::with_capacity(len);
+        for i in 0..len { units.push(u16le(b, o + 2 + i * 2)?); }
+        String::from_utf16(&units).ok()
+    }
+    /// 从「ID 目录 → 语言目录 → IMAGE_RESOURCE_DATA_ENTRY」取真实字节
+    fn leaf_data(b: &[u8], secs: &[Sec], base: usize, id_sub: u32) -> Option<Vec<u8>> {
         let id_dir = base + (id_sub & 0x7fff_ffff) as usize;
         let (_, lang_sub) = entry(b, id_dir, None)?;
         let de = base + (lang_sub & 0x7fff_ffff) as usize;
@@ -409,8 +432,47 @@ mod pe {
         let o = off(secs, rva)?;
         Some(b.get(o..o.saturating_add(size))?.to_vec())
     }
+    /// 选 RT_GROUP_ICON：⚠️ 优先字符串命名的主图标组（IDR_MAINFRAME 这类）。
+    /// 千问 exe 里数字 ID 组全是文件类型关联图标（BT 种子、PDF、视频…），
+    /// 只认数字 ID 就会把「BT」文件图标当成 App 图标。
+    fn group_data(b: &[u8], secs: &[Sec], base: usize) -> Option<Vec<u8>> {
+        let (_, type_sub) = entry(b, base, Some(14))?;
+        let type_dir = base + (type_sub & 0x7fff_ffff) as usize;
+        let named = u16le(b, type_dir + 12)? as usize;
+        for i in 0..named {
+            let p = type_dir + 16 + i * 8;
+            let name = u32le(b, p)?;
+            let gsub = u32le(b, p + 4)?;
+            if let Some(n) = res_name(b, base, name) {
+                if n.to_ascii_uppercase().contains("MAINFRAME") {
+                    if let Some(d) = leaf_data(b, secs, base, gsub) { return Some(d); }
+                }
+            }
+        }
+        // 没有命名主图标组时回退到第一个数字 ID 组（大多数普通 exe）
+        let (_, id_sub) = entry(b, type_dir, None)?;
+        leaf_data(b, secs, base, id_sub)
+    }
+    /// 按 ID 取 RT_ICON 数据
+    fn icon_data(b: &[u8], secs: &[Sec], base: usize, id: u32) -> Option<Vec<u8>> {
+        let (_, type_sub) = entry(b, base, Some(3))?;
+        let type_dir = base + (type_sub & 0x7fff_ffff) as usize;
+        let (_, id_sub) = entry(b, type_dir, Some(id))?;
+        leaf_data(b, secs, base, id_sub)
+    }
+    fn png_size(png: &[u8]) -> Option<(u32, u32)> {
+        if png.len() < 24 || &png[0..8] != b"\x89PNG\r\n\x1a\n" { return None; }
+        Some((
+            u32::from_be_bytes([png[16], png[17], png[18], png[19]]),
+            u32::from_be_bytes([png[20], png[21], png[22], png[23]]),
+        ))
+    }
 
-    pub fn extract(path: &str) -> Option<Vec<u8>> {
+    /// 返回 (mime, bytes)。⚠️ 优先直接给 PNG、由浏览器缩放，不再拼 ICO：
+    /// 豆包 exe 里有标称 256×256 但实际 512×512 的 PNG 条目，拼进 ICO 后
+    /// Chromium 按声明尺寸解码会得到空白/透明。直接给 PNG 就没这层陷阱。
+    /// 只有完全没有 PNG 条目的老程序才拼 DIB ICO 兜底。
+    pub fn extract(path: &str) -> Option<(&'static str, Vec<u8>)> {
         let b = std::fs::read(path).ok()?;
         let pe = u32le(&b, 0x3c)? as usize;
         if b.get(pe..pe + 4)? != b"PE\0\0" { return None; }
@@ -431,32 +493,46 @@ mod pe {
             });
         }
         let base = off(&secs, rsrc_rva)?;
-        let group = data_of(&b, &secs, base, rsrc_rva, 14, None)?; // RT_GROUP_ICON
+        let group = group_data(&b, &secs, base)?;
         let count = u16le(&group, 4)? as usize;
-        if count == 0 || count > 32 { return None; }
-        let mut blobs = Vec::new();
-        let mut dirs = Vec::new();
+        if count == 0 || count > 64 { return None; }
+
+        let mut best: Option<(u64, Vec<u8>)> = None;
+        let mut dibs: Vec<(Vec<u8>, u8, u8)> = Vec::new();
         for i in 0..count {
             let p = 6 + i * 14;
-            if p + 14 > group.len() { return None; }
+            if p + 14 > group.len() { continue; }
             let id = u16le(&group, p + 12)? as u32;
-            let bytes = data_of(&b, &secs, base, rsrc_rva, 3, Some(id))?; // RT_ICON
-            dirs.push(group.get(p..p + 12)?.to_vec());
-            blobs.push(bytes);
+            let Some(bytes) = icon_data(&b, &secs, base, id) else { continue };
+            if let Some((w, h)) = png_size(&bytes) {
+                // 直接返回 PNG 由浏览器缩放，不受 ICO 的 256 上限约束；
+                // 挑面积最大的：同一图标的大图通常更干净，小图常带调色板抖动
+                let score = (w * h) as u64;
+                if best.as_ref().map_or(true, |(s, _)| score > *s) {
+                    best = Some((score, bytes));
+                }
+            } else if bytes.len() > 40 {
+                let w = u32le(&bytes, 4).unwrap_or(0) as u8;
+                let h = (u32le(&bytes, 8).unwrap_or(0) / 2) as u8;
+                dibs.push((bytes, w, h));
+            }
         }
-        let mut ico = vec![0u8, 0, 1, 0, count as u8, 0];
-        let mut cursor = 6 + count * 16;
-        for (i, blob) in blobs.iter().enumerate() {
-            let mut d = dirs[i].clone();
-            // GRPICONDIRENTRY 前 12 字节 = ICONDIRENTRY 前 12 字节（宽高色数保留/面数位深/大小）
-            d.truncate(8);
-            ico.extend_from_slice(&d);
+        if let Some((_, png)) = best { return Some(("image/png", png)); }
+        if dibs.is_empty() { return None; }
+
+        let n = dibs.len();
+        let mut ico = vec![0u8, 0, 1, 0, n as u8, 0];
+        let mut cursor = 6 + n * 16;
+        for (blob, w, h) in &dibs {
+            ico.extend_from_slice(&[*w, *h, 0, 0]);
+            ico.extend_from_slice(&1u16.to_le_bytes()); // planes
+            ico.extend_from_slice(&32u16.to_le_bytes()); // bitCount
             ico.extend_from_slice(&(blob.len() as u32).to_le_bytes());
             ico.extend_from_slice(&(cursor as u32).to_le_bytes());
             cursor += blob.len();
         }
-        for blob in &blobs { ico.extend_from_slice(blob); }
-        Some(ico)
+        for (blob, _, _) in &dibs { ico.extend_from_slice(blob); }
+        Some(("image/x-icon", ico))
     }
 }
 
@@ -619,9 +695,14 @@ mod tests {
         ];
         let mut got = false;
         for path in candidates {
-            if let Some(ico) = super::pe::extract(path) {
-                assert!(ico.len() > 22, "ICO 太短");
-                assert_eq!(&ico[0..4], &[0, 0, 1, 0], "ICONDIR 头不对");
+            if let Some((mime, bytes)) = super::pe::extract(path) {
+                assert!(bytes.len() > 22, "图标太短");
+                if mime == "image/png" {
+                    assert_eq!(&bytes[0..8], b"\x89PNG\r\n\x1a\n", "PNG 头不对");
+                } else {
+                    assert_eq!(mime, "image/x-icon");
+                    assert_eq!(&bytes[0..4], &[0, 0, 1, 0], "ICONDIR 头不对");
+                }
                 got = true;
                 break;
             }
@@ -641,6 +722,44 @@ mod tests {
         assert_eq!(launch_kind(r"C:\Apps\run.bat", false), LaunchKind::Batch);
         assert_eq!(launch_kind(r"C:\Apps\run.cmd", false), LaunchKind::Batch);
         assert_eq!(launch_kind(r"C:\Apps\run.vbs", false), LaunchKind::ScriptHost);
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn pe_icons_for_doubao_and_qianwen() {
+        // 真机回归：豆包透明 / 千问 BT 图标。CI 上没有这两个 exe 时自动跳过。
+        let doubao = r"D:\Program Files\Doubao\Doubao.exe";
+        let qianwen = r"D:\Program Files\QianwenApp\qianwen.exe";
+        if !std::path::Path::new(doubao).exists() || !std::path::Path::new(qianwen).exists() {
+            return;
+        }
+        let (m1, b1) = super::pe::extract(doubao).expect("豆包应抽出图标");
+        assert_eq!(m1, "image/png");
+        assert_eq!(&b1[0..8], b"\x89PNG\r\n\x1a\n");
+        let w1 = u32::from_be_bytes([b1[16], b1[17], b1[18], b1[19]]);
+        assert!(w1 >= 256, "豆包应拿到干净大图，实际 {}", w1);
+        let _ = std::fs::write(r"C:\Users\milay\AppData\Local\Temp\appmgr-doubao-selected.png", &b1);
+
+        let (m2, b2) = super::pe::extract(qianwen).expect("千问应抽出图标");
+        assert_eq!(m2, "image/png");
+        assert_eq!(&b2[0..8], b"\x89PNG\r\n\x1a\n");
+        // 落在命名主图标组里即可（该组同时有 768 与 256 两档，优先 <=256）。
+        // 导出图片供人工核对不是 BT 文件图标，比硬编码字节长度可靠。
+        let _ = std::fs::write(r"C:\Users\milay\AppData\Local\Temp\appmgr-qianwen-selected.png", &b2);
+        assert!(b2.len() > 1000, "千问图标数据异常");
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn reveal_arg_quotes_paths_with_spaces() {
+        assert_eq!(
+            super::windows_reveal_arg(r"D:\Program Files\Doubao\Doubao.exe", true),
+            r#"/select,"D:\Program Files\Doubao\Doubao.exe""#
+        );
+        assert_eq!(
+            super::windows_reveal_arg(r"D:\Program Files\Doubao\missing.exe", false),
+            r#""D:\Program Files\Doubao""#
+        );
     }
 
     #[test]

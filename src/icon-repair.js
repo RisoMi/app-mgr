@@ -3,8 +3,8 @@
 //
 // 规则：
 //  - 只处理有 path 的项目；
-//  - 抽到图标才覆盖 logo，抽不到或抛错一律**保留原图标**
-//    （否则一键修复会把用户手动上传的图标清空）；
+//  - 抽到图标才覆盖 logo；抽不到或抛错一律**清空 logo**，
+//    交给 ItemCard 的首字母 / 文件夹兜底（Lei：不要显示碎图）；
 //  - 每项 await 之后让出一个宏任务，保证进度文字能真正刷到界面上。
 
 export async function repairAllIcons({ items, extractIcon, onProgress, onDone }) {
@@ -25,9 +25,11 @@ export async function repairAllIcons({ items, extractIcon, onProgress, onDone })
         list[i].logo = logo
         ok += 1
       } else {
+        list[i].logo = null
         skipped += 1
       }
     } catch {
+      list[i].logo = null
       skipped += 1
     }
     await new Promise((resolve) => setTimeout(resolve, 0))

@@ -3,8 +3,8 @@ import { repairAllIcons } from '../../src/icon-repair.js'
 
 const items = [
   { path: 'a.exe', logo: 'old' },
-  { path: 'b.app', logo: null },
-  { path: 'c.txt', logo: 'keep' },
+  { path: 'b.app', logo: 'custom-upload' },
+  { path: 'c.txt', logo: 'stale-or-broken' },
   { path: '', logo: 'no-path' }
 ]
 
@@ -25,8 +25,8 @@ assert.equal(res.total, 3, '空 path 应被过滤')
 assert.equal(res.ok, 1)
 assert.equal(res.skipped, 2)
 assert.equal(items[0].logo, 'data:image/png;base64,AAA', '抽到的应覆盖')
-assert.equal(items[1].logo, null, '抽不到应保留原样')
-assert.equal(items[2].logo, 'keep', '抛错应保留原样')
+assert.equal(items[1].logo, null, '抽不到应清空走字母兜底')
+assert.equal(items[2].logo, null, '抛错应清空走字母兜底')
 assert.deepEqual(calls, ['a.exe', 'b.app', 'c.txt'])
 assert.equal(progress.length, 3)
 

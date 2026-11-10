@@ -173,7 +173,7 @@ async function repairIcons() {
           <span>图标维护</span>
         </div>
         <div class="set-desc">
-          重新从应用 / 快捷方式抽取系统图标，会覆盖已有图标；抽不到的项目保留原样。
+          重新从应用 / 快捷方式抽取系统图标，会覆盖已有图标；抽不到的改为首字母图标。
         </div>
         <div class="fix-row">
           <button class="btn ghost" :disabled="fixing" @click="repairIcons">

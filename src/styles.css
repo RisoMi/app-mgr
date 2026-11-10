@@ -60,6 +60,7 @@
     'Segoe UI Variable Text', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei UI',
     'Noto Sans SC', sans-serif;
 
+  --md-panel: #ffffff;
   --hairline: 1px solid var(--md-glass-line);
 }
 
@@ -2652,7 +2653,8 @@ body:has(.app.mini-on) { background: var(--md-surface); }
 }
 .add-cat-btn:hover { background: var(--md-glass-strong); }
 .dialog, .ctx-menu, .group-modal {
-  background: var(--md-glass-strong);
+  /* 浮层一律不透明：半透明叠在光晕上会浑，且浮层之上再叠浮层会叠加发灰 */
+  background: var(--md-panel);
   border: 1px solid var(--md-glass-line);
   border-radius: var(--md-corner-lg);
   box-shadow: var(--md-glass-shadow-hover);

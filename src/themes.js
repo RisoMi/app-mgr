@@ -350,7 +350,8 @@ const NEUTRAL = {
     'surface-container-high': 'rgba(255, 255, 255, 0.80)',
     'surface-container-highest': 'rgba(255, 255, 255, 0.92)',
     outline: '#8b7fb0',
-    'outline-variant': 'rgba(122, 92, 255, 0.16)'
+    'outline-variant': 'rgba(122, 92, 255, 0.16)',
+    panel: '#ffffff'
   },
   dark: {
     surface: '#171522',
@@ -362,7 +363,8 @@ const NEUTRAL = {
     'surface-container-high': 'rgba(255, 255, 255, 0.09)',
     'surface-container-highest': 'rgba(255, 255, 255, 0.12)',
     outline: '#8f86a8',
-    'outline-variant': 'rgba(180, 160, 255, 0.18)'
+    'outline-variant': 'rgba(180, 160, 255, 0.18)',
+    panel: '#211e2c'
   }
 }
 

@@ -60,13 +60,17 @@
 
 | 平台 | 路径 |
 | --- | --- |
-| Windows | 纯 Rust 解析 PE 资源目录，取 `RT_GROUP_ICON` + `RT_ICON` 拼成 ICO → data URL；`.lnk` 先轻量扫出目标路径 |
+| Windows | 纯 Rust 解析 PE 资源目录：优先字符串命名的主图标组（`IDR_MAINFRAME`），否则第一个数字 ID 组；挑最合适的 PNG 条目直接返回 data URL（浏览器缩放），没有 PNG 才拼 DIB ICO 兜底；`.lnk` 先轻量扫出目标路径 |
 | macOS | 读 `.app/Contents/Info.plist` 的 `CFBundleIconFile` → `.icns` → 系统 `sips` 转 PNG → data URL |
 | 其它 / 无资源 | 返回 `null`，前端用字母兜底 |
 
 浏览器原生支持 ICO / PNG 的 data URL，所以**不需要图像 crate、不需要子进程抽图标
 （Windows）、不需要落盘单独文件、不需要自定义协议**。旧版那套 C# P/Invoke + 预编译 DLL
 缓存 + 快捷方式 COM 解析（约 1130 行）整块消失。
+
+> 两个真机坑：① 只认数字 ID 图标组会把千问 exe 的「BT 文件类型图标」当成 App 图标，
+> 真正的主图标在命名组 `IDR_MAINFRAME`；② 把「标称 256 实际 512」的 PNG 拼进 ICO，
+> Chromium 解码会得到透明空白。改成直接返回 PNG 后两者一起解决。
 
 `cargo test` 里有一条用真实系统 exe 验证 PE 解析链的测试。
 

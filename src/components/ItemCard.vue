@@ -64,8 +64,11 @@ const tip = computed(() => `${props.item.name} · ${badge.value}`)
 // 不裁的话并排看就是"有的图标很小"。其他样式保留原始图标 —— Windows 自己也不裁，
 // 那圈安全边距是有意留的，动了反而失真。
 const src = ref('')
+// 坏 data URL / 解码失败不要再显示碎图，直接回退到首字母或文件夹图形
+const imgBroken = ref(false)
 const trimCache = new Map() // logo 相对路径 -> dataURL | null（null 表示无需裁剪）
 async function resolveSrc() {
+  imgBroken.value = false
   const url = logoSrc(props.item)
   if (!url) {
     src.value = ''
@@ -251,7 +254,14 @@ function onDragEnd() {
     @dragend="onDragEnd"
   >
     <span class="icon-box">
-      <img v-if="src" class="logo" :src="src" :alt="item.name" draggable="false" />
+      <img
+        v-if="src && !imgBroken"
+        class="logo"
+        :src="src"
+        :alt="item.name"
+        draggable="false"
+        @error="imgBroken = true"
+      />
       <div v-else-if="item.type === 'folder'" class="fallback folder" :style="{ color: folderColor }">
         <MdIcon name="folder" :size="28" />
       </div>
