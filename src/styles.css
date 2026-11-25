@@ -61,6 +61,8 @@
     'Noto Sans SC', sans-serif;
 
   --md-panel: #ffffff;
+  --md-panel-1: #f6f7fb;
+  --md-panel-2: #eceef5;
   --hairline: 1px solid var(--md-glass-line);
 }
 
@@ -2660,7 +2662,17 @@ body:has(.app.mini-on) { background: var(--md-surface); }
 }
 .add-cat-btn:hover { background: var(--md-glass-strong); }
 .dialog, .ctx-menu, .group-modal {
-  /* 浮层一律不透明：半透明叠在光晕上会浑，且浮层之上再叠浮层会叠加发灰 */
+  /* 浮层内所有半透明 surface / glass 令牌重映射成不透明面板色。
+     CSS 变量会继承，底部栏、色板、分段控件、输入框等后代一次全部生效。
+     ⚠️ 只改主 background 不够：深色下 .set-foot 用的是
+     rgba(255,255,255,0.045)，叠在面板上就是「设置界面变透明」的真凶。
+     浅色下白叠白看不出来，所以只有深色露馅。 */
+  --md-surface-container-low: var(--md-panel);
+  --md-surface-container: var(--md-panel-1);
+  --md-surface-container-high: var(--md-panel-2);
+  --md-surface-container-highest: var(--md-panel-2);
+  --md-glass: var(--md-panel);
+  --md-glass-strong: var(--md-panel-1);
   background: var(--md-panel);
   border: 1px solid var(--md-glass-line);
   border-radius: var(--md-corner-lg);
