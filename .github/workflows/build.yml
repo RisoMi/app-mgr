@@ -62,3 +62,43 @@ jobs:
           path: |
             AppMgr-portable.exe
             src-tauri/target/release/bundle/dmg/*.dmg
+
+  # Releases 是独立功能：upload-artifact 只把包放进 Actions run，不会出现在 Releases 页。
+  # 这里只在 v* tag 推送时汇总两个平台的产物、生成正式 Release；
+  # 普通 push / workflow_dispatch 仍然只出 artifact，不对外发布。
+  release:
+    name: publish release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: bundle
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Windows portable exe
+        uses: actions/download-artifact@v4
+        with:
+          name: appmgr-windows-latest
+          path: artifacts/windows
+
+      - name: Download macOS dmg
+        uses: actions/download-artifact@v4
+        with:
+          name: appmgr-macos-latest
+          path: artifacts/macos
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          DMG=$(find artifacts/macos -name '*.dmg' | head -1)
+          test -n "$DMG" || { echo "macOS dmg not found"; exit 1; }
+          gh release create "$TAG" \
+            "artifacts/windows/AppMgr-portable.exe#AppMgr-portable-Windows-x86_64.exe" \
+            "$DMG#AppMgr-${TAG}-macOS-aarch64.dmg" \
+            --title "AppMgr $TAG" \
+            --notes "Windows: 便携版 exe，免安装；数据落在 exe 同级 data/ 目录。
+          macOS: Apple Silicon (aarch64) dmg；当前未签名未公证，首次打开需右键 → 打开。
+          这是 CI 自动构建产物，用于真机验证，尚未做正式代码签名与公证。"
